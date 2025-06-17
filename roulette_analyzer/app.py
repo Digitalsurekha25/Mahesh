@@ -25,6 +25,11 @@ from analysis_engine import (
     detect_biases, analyze_wheel_clusters, WHEEL_ORDER, ROULETTE_WHEEL
 )
 from prediction_engine import generate_predictions
+from src.database_manager import init_db, add_multiple_spin_results, get_total_spins_count # DB functions
+from src.train_models import train_predict_next_dozen_model # For triggering training
+
+# Initialize DB (creates table if it doesn't exist)
+init_db()
 
 def parse_web_input(input_string: str) -> tuple[list[int], list[str]]:
     """
@@ -174,12 +179,14 @@ def home():
     # For OCR prefill, 'ocr_prefill_numbers' is now the primary mechanism.
     # Parsing messages from manual input are handled within the /analyze POST itself.
     # Flashed messages from /ocr_upload will be handled by Jinja's get_flashed_messages.
+    total_db_spins = get_total_spins_count()
 
     return render_template('index.html',
                            results_available=False,
                            numbers_history_display=history_display,
                            color_map=ROULETTE_WHEEL,
-                           ocr_prefill_numbers=ocr_prefill_numbers) # Pass this to template
+                           ocr_prefill_numbers=ocr_prefill_numbers,
+                           total_db_spins=total_db_spins) # Pass this to template
 
 @app.route('/analyze', methods=['POST'])
 def analyze_results():
@@ -199,14 +206,19 @@ def analyze_results():
                                parsing_messages=parsing_messages, # show why
                                results_available=False,
                                numbers_history_display=history_display,
-                               color_map=ROULETTE_WHEEL) # Added color_map
+                               color_map=ROULETTE_WHEEL,
+                               total_db_spins=get_total_spins_count()) # Added color_map and total_db_spins
+
+    # Add valid numbers from this input to the persistent database
+    if numbers_from_input:
+        add_multiple_spin_results(numbers_from_input)
 
     # Update session history
     current_history.extend(numbers_from_input)
-    session['roulette_numbers_history'] = current_history
+    session['roulette_numbers_history'] = current_history # current_history now includes numbers_from_input
     session.modified = True
 
-    updated_history_display = ", ".join(map(str, current_history[-50:]))
+    updated_history_display = ", ".join(map(str, current_history[-50:])) # Display last 50 from session
 
     # --- Call Analysis Functions ---
     analysis_results_dict = {}
@@ -254,7 +266,8 @@ def analyze_results():
                             parsing_messages=parsing_messages,
                             success_message=success_message,
                             error_message=general_error_message if general_error_message else None,
-                            color_map=ROULETTE_WHEEL) # Added color_map
+                            color_map=ROULETTE_WHEEL,
+                            total_db_spins=get_total_spins_count()) # Added color_map and total_db_spins
 
 @app.route('/reset', methods=['POST'])
 def reset_session():
@@ -270,3 +283,30 @@ def reset_session():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+@app.route('/train_ml_models', methods=['POST'])
+def trigger_model_training_route():
+    flash("AI/ML model training started. This might take a few moments...", "info")
+
+    try:
+        # For now, only the dozen model training is called.
+        # This function is expected to print its own logs to the console.
+        # It returns True on success, False on failure/issues.
+        if train_predict_next_dozen_model():
+            flash("AI/ML Training Process (Next Dozen Model) Completed. Check server logs for details of accuracy and other metrics.", "success")
+        else:
+            flash("AI/ML Training Process (Next Dozen Model) may have encountered issues, had insufficient data, or the model performance was very low. Check server logs.", "warning")
+
+        # TODO: When other models (column, section, number) are created, add their training calls here:
+        # if train_predict_next_column_model():
+        #     flash("Column Model training completed.", "success")
+        # else:
+        #     flash("Column Model training failed or had issues.", "warning")
+        # ... and so on for other models.
+
+    except Exception as e:
+        flash(f"An unexpected error occurred during the training process trigger: {str(e)}", "error")
+        print(f"Error during trigger_model_training_route: {e}") # Log to server console
+
+    return redirect(url_for('home'))

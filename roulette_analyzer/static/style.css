@@ -95,7 +95,7 @@ tr:nth-child(even) {
 .prediction-reason {
     font-size: 0.9em;
     color: #555;
-    margin-left: 15px;
+    margin-left: 10px; /* Adjusted from 15px */
 }
 .confidence-note {
     font-style: italic;
@@ -105,6 +105,36 @@ tr:nth-child(even) {
     background-color: #f0f0f0;
     border-left: 3px solid #ccc;
 }
+
+/* Styles for ML Predictions Section */
+#ml-predictions-section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+#ml-predictions-section li {
+    padding: 8px 0; /* Adjusted padding */
+    border-bottom: 1px dashed #eee;
+}
+#ml-predictions-section li:last-child {
+    border-bottom: none;
+}
+.prediction-value { /* For the actual predicted value from ML */
+    font-weight: bold;
+    color: #2a9fd6; /* A distinct color for ML predictions */
+    margin-left: 5px;
+}
+.status-message { /* For status like "Model not found" or other errors */
+    font-size: 0.9em;
+    color: #777;
+    margin-left: 10px;
+}
+/*
+.probabilities-list {
+    font-size: 0.85em;
+    margin-left: 20px;
+    list-style-type: square;
+}
+*/
 
 hr {
     border: 0;

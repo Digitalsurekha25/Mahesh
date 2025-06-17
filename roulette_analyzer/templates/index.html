@@ -286,28 +286,31 @@
     <!-- Predictions -->
     <div id="predictions" class="predictions-section">
         <h2>Predictions</h2>
-        {% if predictions and predictions.prediction_summary %}
-            <h4>Prediction Summary:</h4>
-            <ul>{% for note in predictions.prediction_summary %}<li>{{note}}</li>{% endfor %}</ul>
+        {% if predictions and (predictions.prediction_summary or predictions.ml_based_predictions) %}
+            {% if predictions.prediction_summary %}
+                <h4>Prediction Summary Notes:</h4>
+                <ul>{% for note in predictions.prediction_summary %}<li>{{note}}</li>{% endfor %}</ul>
+            {% endif %}
 
+            {# Statistical Predictions - Assuming these are still top-level keys or you adjust based on actual structure #}
             {% if predictions.predicted_numbers %}
-                <h4>Predicted Numbers:</h4>
+                <h4>Statistically Predicted Numbers:</h4>
                 <ul>{% for p_num in predictions.predicted_numbers %}<li>Number <strong class="hot">{{ p_num.number }}</strong> <span class="prediction-reason">(Reason: {{ p_num.reason }})</span></li>{% endfor %}</ul>
             {% endif %}
 
             {% if predictions.predicted_dozens %}
-                <h4>Predicted Dozens:</h4>
+                <h4>Statistically Predicted Dozens:</h4>
                 <ul>{% for p_doz in predictions.predicted_dozens %}<li>Dozen <strong>{{ p_doz.dozen }}</strong> <span class="prediction-reason">(Reason: {{ p_doz.reason }})</span></li>{% endfor %}</ul>
             {% endif %}
 
             {% if predictions.predicted_columns %}
-                <h4>Predicted Columns:</h4>
+                <h4>Statistically Predicted Columns:</h4>
                 <ul>{% for p_col in predictions.predicted_columns %}<li>Column <strong>{{ p_col.column }}</strong> <span class="prediction-reason">(Reason: {{ p_col.reason }})</span></li>{% endfor %}</ul>
             {% endif %}
 
             {% with ps = predictions.predicted_sections %}
                 {% if ps and (ps.voisins_tiers_orphelins or ps.halves or ps.even_odd) %}
-                <h4>Predicted Sections/Bets:</h4>
+                <h4>Statistically Predicted Sections/Bets:</h4>
                 <ul>
                     {% for p_sec in ps.voisins_tiers_orphelins %}<li><strong>{{ p_sec.section }}</strong> <span class="prediction-reason">(Reason: {{ p_sec.reason }})</span></li>{% endfor %}
                     {% for p_half in ps.halves %}<li>Half <strong>{{ p_half.half }}</strong> <span class="prediction-reason">(Reason: {{ p_half.reason }})</span></li>{% endfor %}
@@ -315,8 +318,44 @@
                 </ul>
                 {% endif %}
             {% endwith %}
-            <div class="confidence-note">
-                <p><em>{{ predictions.confidence_note }}</em></p>
+
+            {# AI/ML Predictions Section #}
+            {% if predictions.ml_based_predictions %}
+                <div id="ml-predictions-section" style="margin-top:20px;">
+                    <h4>AI/ML-Based Predictions:</h4>
+                    {% if predictions.ml_based_predictions is iterable and predictions.ml_based_predictions is not string %}
+                        <ul>
+                            {% for ml_pred in predictions.ml_based_predictions %}
+                                <li>
+                                    <strong>{{ ml_pred.model_name }}:</strong>
+                                    {% if ml_pred.prediction != "N/A" %}
+                                        <span class="prediction-value">{{ ml_pred.prediction }}</span>
+                                    {% endif %}
+                                    {% if ml_pred.status and ml_pred.status != "Prediction successful." %}
+                                        <em class="status-message">({{ ml_pred.status }})</em>
+                                    {% elif ml_pred.prediction == "N/A" and not ml_pred.status %}
+                                        <em class="status-message">(No prediction available or model not run)</em>
+                                    {% endif %}
+                                    {# Placeholder for probabilities
+                                    {% if ml_pred.probabilities %}
+                                        <ul class="probabilities-list">
+                                        {% for class, prob in ml_pred.probabilities.items() %}
+                                            <li>{{ class }}: {{ "%.2f" % (prob * 100) }}%</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                    #}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>AI/ML prediction data is not in the expected format.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="confidence-note" style="margin-top:20px;">
+                <p><em>{{ predictions.confidence_note | default("Gamble responsibly. Predictions are not guarantees.") }}</em></p>
             </div>
         {% else %}
             <p>No predictions available or not enough data to generate them.</p>
@@ -330,10 +369,24 @@
     <h3>Current Numbers History (Last 50)</h3>
     <p>{{ numbers_history_display if numbers_history_display else "No numbers entered yet for this session." }}</p>
 
+    <div class="data-stats" style="margin-top:10px; padding:10px; background-color:#f0f0f0; border-radius:4px;">
+        <p>Total numbers recorded for AI/ML training (persistent DB): <strong>{{ total_db_spins if total_db_spins is not none else 'N/A' }}</strong></p>
+        <!-- We'll add a button to clear this DB data later -->
+    </div>
+
     <div style="margin-top: 20px; margin-bottom: 20px;">
         <form method="POST" action="{{ url_for('reset_session') }}" style="display: inline;">
-            <input type="submit" value="Clear All History & Start New Session" style="background-color: #d9534f; border-color: #d43f3a;">
+            <input type="submit" value="Clear All History & Start New Session" style="background-color: #d9534f; border-color: #d43f3a;"> <!-- This clears session history only -->
         </form>
+    </div>
+
+    <div class="model-management" style="margin-top: 30px; padding: 15px; background-color: #f0ad4e; border-radius: 5px; color: #333;"> <!-- Changed text color for better readability -->
+        <h4>AI/ML Model Management</h4>
+        <p style="font-size: 0.9em;">Use the button below to train (or retrain) the AI/ML prediction models using all currently recorded numbers in the persistent database. This may take a few moments.</p>
+        <form method="POST" action="{{ url_for('trigger_model_training_route') }}">
+            <input type="submit" value="Train / Retrain AI/ML Models" style="background-color: #c9302c; border-color: #ac2925; color: white;">
+        </form>
+        <p style="font-size:0.8em; margin-top:10px;"><em>(Training progress and detailed logs will appear in the server console.)</em></p>
     </div>
 
 </div> {# End of .container #}

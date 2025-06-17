@@ -1,3 +1,6 @@
 Flask
 Pillow
 pytesseract
+numpy
+scikit-learn
+joblib
