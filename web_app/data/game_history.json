@@ -1,1 +1,14 @@
-[]
+[
+    {
+        "timestamp": "2025-06-17T07:24:16.257772+00:00",
+        "game_type": "baccarat",
+        "winner": "player",
+        "predicted_winner_for_this_round": "player"
+    },
+    {
+        "timestamp": "2025-06-17T07:24:16.725475+00:00",
+        "game_type": "baccarat",
+        "winner": "banker",
+        "predicted_winner_for_this_round": "player"
+    }
+]
