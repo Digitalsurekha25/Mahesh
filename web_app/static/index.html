@@ -3,186 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A simple web tool for analyzing Baccarat and Dragon-Tiger game results and viewing basic predictions.">
-    <title>Game Results Analyzer</title>
+    <meta name="description" content="A web tool for analyzing Baccarat and Dragon-Tiger game results and viewing rule-based predictions.">
+    <title>Game Analyzer Pro</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            color: #212529;
-            line-height: 1.6;
+            margin: 0; padding: 0; background-color: #f8f9fa; color: #212529; line-height: 1.6;
         }
-        .app-header {
-            background-color: #343a40;
-            color: #fff;
-            padding: 20px 0;
-            text-align: center;
-            margin-bottom: 30px;
+        .app-header { background-color: #343a40; color: #fff; padding: 20px 0; text-align: center; margin-bottom: 0; }
+        .app-header h1 { margin: 0; font-size: 2em; }
+
+        .tab-container { width: 100%; }
+        .tab-buttons { display: flex; background-color: #e9ecef; border-bottom: 1px solid #dee2e6; }
+        .tab-button {
+            padding: 14px 20px; cursor: pointer; border: none; background-color: transparent;
+            font-size: 1.1em; color: #495057; transition: background-color 0.3s, color 0.3s;
+            border-bottom: 3px solid transparent;
         }
-        .app-header h1 {
-            margin: 0;
-            font-size: 2.2em;
+        .tab-button:hover { background-color: #dee2e6; }
+        .tab-button.active { color: #007bff; border-bottom: 3px solid #007bff; font-weight: bold; }
+
+        .tab-content { display: none; padding: 20px; border-top: none; background-color: #ffffff; }
+        .tab-content.active { display: block; }
+
+        .container { max-width: 900px; margin: auto; padding-top:1px; }
+
+        h2, h3 { color: #343a40; padding-bottom: 8px; margin-top: 25px; }
+        h2 { font-size: 1.6em; border-bottom: 2px solid #dee2e6;}
+        h3 { font-size: 1.3em; color: #0069d9; border-bottom: none;}
+
+        .game-form-section, .predictions-section, .analysis-section {
+            margin-bottom: 25px; padding: 20px; border: 1px solid #dee2e6;
+            border-radius: 8px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        .container {
-            max-width: 850px;
-            margin: auto;
-            padding: 20px;
+        .input-area label { font-weight: 500; display: block; margin-bottom: 5px; }
+        .input-area select, .input-area button {
+            padding: 10px 15px; margin-top: 5px; margin-right: 10px; border-radius: 6px;
+            border: 1px solid #ced4da; font-size: 1em; transition: box-shadow 0.15s, border-color 0.15s;
         }
-        h2, h3 {
-            color: #343a40;
-            border-bottom: 2px solid #dee2e6;
-            padding-bottom: 8px;
-            margin-top: 25px;
+        .input-area select:focus, .input-area button:focus {
+            border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
-        .game-form, .predictions-section {
-            margin-bottom: 30px;
-            padding: 25px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        .input-area button { background-color: #007bff; color: white; cursor: pointer; border-color: #007bff; }
+        .input-area button:hover { background-color: #0069d9; border-color: #0062cc; }
+
+        .prediction-display, .accuracy-display { margin-top: 10px; }
+        .prediction-display p, .accuracy-display p { margin: 8px 0; font-size: 1.05em; }
+        .prediction-display span { font-weight: bold; color: #28a745; }
+        .accuracy-display span { font-weight: bold; color: #17a2b8; }
+
+        .analysis-items ul { list-style-type: none; padding-left: 0; }
+        .analysis-items li {
+            background-color: #f8f9fa; padding: 10px 12px; border-radius: 5px;
+            margin-bottom: 6px; border-left: 4px solid #ffc107; font-size: 0.95em;
         }
-        label {
-            margin-right: 10px;
-            font-weight: 500;
-            display: block;
-            margin-bottom: 5px;
-        }
-        select, button {
-            padding: 12px 18px;
-            margin-top: 5px;
-            margin-right: 10px;
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            font-size: 1em;
-            transition: box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out;
-        }
-        select:focus, button:focus {
-            border-color: #80bdff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border-color: #007bff;
-        }
-        button:hover {
-            background-color: #0069d9;
-            border-color: #0062cc;
-        }
-        #predictionsArea { margin-top: 15px; }
-        .prediction-block { margin-bottom: 25px; }
-        .prediction-block h3 {
-            margin-top: 0;
-            color: #0069d9;
-            font-size: 1.3em;
-            border-bottom: none; /* Remove double border from h3 if parent h2 has it */
-        }
-        .prediction-block ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        .prediction-block li {
-            background-color: #f8f9fa;
-            padding: 10px 12px;
-            border-radius: 5px;
-            margin-bottom: 6px;
-            border-left: 4px solid #007bff;
-            font-size: 0.95em;
-        }
-        .prediction-block li strong { color: #495057; }
-        .status-message {
-            margin: 20px 0;
-            padding: 15px 20px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 1.05em;
-        }
+        .analysis-items li strong { color: #495057; }
+
+        .status-message { margin: 20px; padding: 15px 20px; border-radius: 6px; text-align: center; font-size: 1.05em; }
         .success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
-        .game-history-summary {
-            font-size: 0.95em;
-            color: #6c757d;
-            text-align: right;
-            margin-bottom:15px;
-            padding-top: 5px;
-            border-top: 1px solid #eee;
-        }
-        .app-footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px 0;
-            font-size: 0.9em;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-        }
+
+        .game-history-summary { font-size: 0.9em; color: #6c757d; text-align: right; margin-bottom:10px; padding: 10px; background-color: #f8f9fa; border-radius:4px; }
+        #resetHistoryButtonGlobal { background-color: #dc3545; border-color: #dc3545; color:white; margin:0 0 15px 0; padding: 8px 12px; font-size: 0.9em; border-radius:6px; cursor:pointer; }
+        #resetHistoryButtonGlobal:hover { background-color: #c82333; border-color: #bd2130;}
+
+        .app-footer { text-align: center; margin-top: 30px; padding: 20px 0; font-size: 0.9em; color: #6c757d; border-top: 1px solid #dee2e6;}
     </style>
 </head>
 <body>
     <header class="app-header">
-        <h1>Game Results Analyzer</h1>
+        <h1>Game Analyzer Pro</h1>
     </header>
+
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="openTab(event, 'baccaratTab')">Baccarat</button>
+            <button class="tab-button" onclick="openTab(event, 'dragonTigerTab')">Dragon-Tiger</button>
+        </div>
+    </div>
 
     <div class="container">
         <div id="statusMessage" class="status-message" style="display:none;"></div>
+        <div id="gameHistorySummaryGlobal" class="game-history-summary">Total games in history: 0</div>
+        <button type="button" id="resetHistoryButtonGlobal" onclick="handleResetHistory()">Reset All Game History</button>
 
-        <div class="game-form">
-            <h2>Enter Game Result</h2>
-            <form id="baccaratForm" style="margin-bottom:15px;">
-                <label for="baccaratWinner">Baccarat Winner:</label>
-                <select id="baccaratWinner" name="winner">
-                    <option value="player">Player</option>
-                    <option value="banker">Banker</option>
-                    <option value="tie">Tie</option>
-                </select>
-                <button type="button" onclick="submitGameResult('baccarat')">Submit Baccarat</button>
-            </form>
-            <form id="dragonTigerForm">
-                <label for="dragonTigerWinner">Dragon-Tiger Winner:</label>
-                <select id="dragonTigerWinner" name="winner">
-                    <option value="dragon">Dragon</option>
-                    <option value="tiger">Tiger</option>
-                    <option value="tie">Tie</option>
-                </select>
-                <button type="button" onclick="submitGameResult('dragon-tiger')">Submit Dragon-Tiger</button>
-            </form>
+        <!-- Baccarat Tab -->
+        <div id="baccaratTab" class="tab-content active">
+            <h2>Baccarat</h2>
+            <section class="game-form-section input-area">
+                <h3>Enter Result</h3>
+                <form id="baccaratForm">
+                    <label for="baccaratWinner">Winner:</label>
+                    <select id="baccaratWinner" name="winner">
+                        <option value="player">Player</option><option value="banker">Banker</option><option value="tie">Tie</option>
+                    </select>
+                    <button type="button" onclick="submitGameResult('baccarat')">Submit Baccarat</button>
+                </form>
+            </section>
+            <section class="predictions-section">
+                <h3>Prediction &amp; Accuracy</h3>
+                <div class="prediction-display" id="baccaratNextPrediction">
+                    <p>Next Predicted Winner: <span>N/A</span></p>
+                </div>
+                <div class="accuracy-display" id="baccaratPredictionAccuracy" style="display: none;"> {/* Initially hidden */}
+                    <p>Prediction Accuracy: <span>N/A</span> (Total Predictions Made: <span>0</span>)</p>
+                </div>
+            </section>
+            <section class="analysis-section">
+                <h3>Historical Analysis</h3>
+                <div class="analysis-items" id="baccaratAnalysisItems">
+                    <p>No data yet.</p>
+                </div>
+            </section>
         </div>
 
-        <div class="predictions-section">
-            <h2>Analysis &amp; Predictions</h2>
-            <button type="button" id="resetHistoryButton" onclick="handleResetHistory()" style="background-color: #dc3545; border-color: #dc3545; margin-bottom: 15px; padding: 10px 15px; font-size: 0.95em;">Reset All Game History</button>
-            <div id="gameHistorySummary" class="game-history-summary"></div>
-            <div id="predictionsArea">
-                <p>Submit a game result or wait for initial data to load to see analysis.</p>
-            </div>
+        <!-- Dragon-Tiger Tab -->
+        <div id="dragonTigerTab" class="tab-content">
+            <h2>Dragon-Tiger</h2>
+            <section class="game-form-section input-area">
+                <h3>Enter Result</h3>
+                <form id="dragonTigerForm">
+                    <label for="dragonTigerWinner">Winner:</label>
+                    <select id="dragonTigerWinner" name="winner">
+                        <option value="dragon">Dragon</option><option value="tiger">Tiger</option><option value="tie">Tie</option>
+                    </select>
+                    <button type="button" onclick="submitGameResult('dragon-tiger')">Submit Dragon-Tiger</button>
+                </form>
+            </section>
+            <section class="predictions-section">
+                <h3>Prediction &amp; Accuracy</h3>
+                <div class="prediction-display" id="dragonTigerNextPrediction">
+                     <p>Next Predicted Winner: <span>N/A</span></p>
+                </div>
+                <div class="accuracy-display" id="dragonTigerPredictionAccuracy" style="display: none;"> {/* Initially hidden */}
+                     <p>Prediction Accuracy: <span>N/A</span> (Total Predictions Made: <span>0</span>)</p>
+                </div>
+            </section>
+            <section class="analysis-section">
+                <h3>Historical Analysis</h3>
+                <div class="analysis-items" id="dragonTigerAnalysisItems">
+                    <p>No data yet.</p>
+                </div>
+            </section>
         </div>
     </div>
 
     <footer class="app-footer">
-        <p>&copy; 2023 Game Analyzer. For entertainment and analytical purposes only.</p>
+        <p>&copy; 2023 Game Analyzer Pro. For entertainment and analytical purposes only.</p>
         <p><small>Note: If deployed on a free tier, data may be ephemeral and reset periodically.</small></p>
     </footer>
 
     <script>
         const API_BASE_URL = "/api";
 
+        function openTab(event, tabName) {
+            let i, tabcontent, tabbuttons;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            tabbuttons = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].classList.remove("active");
+            }
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById(tabName).classList.add("active");
+            event.currentTarget.classList.add("active");
+        }
+
         function displayStatusMessage(message, isSuccess) {
             const statusDiv = document.getElementById('statusMessage');
             statusDiv.textContent = message;
             statusDiv.className = 'status-message ' + (isSuccess ? 'success' : 'error');
             statusDiv.style.display = 'block';
-            // Scroll into view smoothly
             statusDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => { statusDiv.style.display = 'none'; }, 7000); // Increased display time
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 7000);
         }
 
         async function submitGameResult(gameType) {
-            let winner;
-            let formId;
+            let winner, formId;
             if (gameType === 'baccarat') {
                 winner = document.getElementById('baccaratWinner').value;
                 formId = 'baccaratForm';
@@ -190,21 +190,17 @@
                 winner = document.getElementById('dragonTigerWinner').value;
                 formId = 'dragonTigerForm';
             } else {
-                displayStatusMessage("Error: Unknown game type.", false);
-                return;
+                displayStatusMessage("Error: Unknown game type.", false); return;
             }
 
             const payload = { game_type: gameType, winner: winner };
             const button = document.querySelector(`#${formId} button`);
             const originalButtonText = button.textContent;
-            button.textContent = 'Submitting...';
-            button.disabled = true;
+            button.textContent = 'Submitting...'; button.disabled = true;
 
             try {
                 const response = await fetch(`${API_BASE_URL}/submit_result`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
                 });
                 const result = await response.json();
                 if (response.ok) {
@@ -216,102 +212,152 @@
             } catch (error) {
                 displayStatusMessage("Error submitting result: " + error.message, false);
             } finally {
-                button.textContent = originalButtonText;
-                button.disabled = false;
+                button.textContent = originalButtonText; button.disabled = false;
             }
         }
 
-        function formatPercentage(value) {
-            return parseFloat(value).toFixed(2) + '%';
+        function handleResetHistory() {
+            if (!confirm("Are you sure you want to reset all game history? This action cannot be undone.")) return;
+            const button = document.getElementById('resetHistoryButtonGlobal');
+            const originalButtonText = button.textContent;
+            button.textContent = 'Resetting...'; button.disabled = true;
+
+            fetch(`${API_BASE_URL}/reset_history`, { method: 'POST', headers: { 'Content-Type': 'application/json' }})
+            .then(response => {
+                if (!response.ok) return response.json().catch(()=>null).then(errBody => { throw new Error(`HTTP ${response.status}: ${errBody?.error||response.statusText}`)});
+                return response.json();
+            })
+            .then(data => {
+                displayStatusMessage(data.message || "Game history reset successfully!", true);
+                fetchPredictions();
+            })
+            .catch(error => displayStatusMessage("Error resetting history: " + error.message, false))
+            .finally(() => { button.textContent = originalButtonText; button.disabled = false; });
         }
 
+        function formatPercentage(value) { return parseFloat(value).toFixed(2) + '%'; }
         function formatTimestamp(isoString) {
-            if (!isoString || isoString === 'N/A') return 'N/A'; // Handle N/A from backend if timestamp was missing
+            if (!isoString || isoString === 'N/A') return 'N/A';
             try {
                 const date = new Date(isoString);
-                 // Check if date is valid
-                if (isNaN(date.getTime())) {
-                    return 'Invalid Date';
-                }
+                if (isNaN(date.getTime())) return 'Invalid Date';
                 // Using specific options for a clearer, more standardized format
                 return date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
-            } catch (e) {
-                console.error("Error formatting timestamp:", isoString, e);
-                return 'Date Error';
+            } catch (e) { console.error("Date format error", e); return 'Date Error'; }
+        }
+
+        function displayGameAnalysis(gameData, analysisItemsId) {
+            const analysisDiv = document.getElementById(analysisItemsId);
+            analysisDiv.innerHTML = '';
+            if (!gameData || gameData.game_count === 0) {
+                analysisDiv.innerHTML = '<p>No historical data for this game type yet.</p>'; return;
+            }
+            const list = document.createElement('ul');
+            list.innerHTML += `<li><strong>Total Games Recorded:</strong> ${gameData.game_count}</li>`;
+            if (gameData.percentages && Object.keys(gameData.percentages).length > 0) {
+                let percentagesStr = Object.entries(gameData.percentages)
+                    .map(([winner, pct]) => `${winner.charAt(0).toUpperCase() + winner.slice(1)}: ${formatPercentage(pct)}`)
+                    .join('; ');
+                list.innerHTML += `<li><strong>Win Percentages:</strong> ${percentagesStr}</li>`;
+            } else { list.innerHTML += `<li><strong>Win Percentages:</strong> No primary outcomes recorded.</li>`; }
+
+            if (gameData.current_streak && gameData.current_streak.winner) {
+                list.innerHTML += `<li><strong>Current Streak:</strong> ${gameData.current_streak.winner.charAt(0).toUpperCase() + gameData.current_streak.winner.slice(1)} (Count: ${gameData.current_streak.count})</li>`;
+            } else { list.innerHTML += `<li><strong>Current Streak:</strong> No current streak.</li>`; }
+
+            if (gameData.last_n_games && gameData.last_n_games.length > 0) {
+                let lastGamesStr = gameData.last_n_games
+                    .map(g => `${g.winner.charAt(0).toUpperCase() + g.winner.slice(1)} <small>(${formatTimestamp(g.timestamp)})</small>`)
+                    .join(', ');
+                list.innerHTML += `<li><strong>Last ${gameData.last_n_games.length} Games (most recent first):</strong> ${lastGamesStr}</li>`;
+            } else { list.innerHTML += `<li><strong>Last Games:</strong> No recent games recorded.</li>`;}
+            analysisDiv.appendChild(list);
+        }
+
+        function displayNextPrediction(gameData, nextPredictionId) {
+            const predDisplaySpan = document.getElementById(nextPredictionId).querySelector('span');
+            if(predDisplaySpan) { // Ensure span exists
+                predDisplaySpan.textContent = gameData.next_predicted_winner ? gameData.next_predicted_winner.charAt(0).toUpperCase() + gameData.next_predicted_winner.slice(1) : 'N/A';
+            }
+        }
+
+        function displayPredictionAccuracy(gameData, accuracyDisplayId) {
+            const accDisplay = document.getElementById(accuracyDisplayId);
+            if (!accDisplay) return; // Guard if element not found
+
+            const accuracySpan = accDisplay.querySelector('p span:nth-child(1)');
+            const totalSpan = accDisplay.querySelector('p span:nth-child(2)');
+
+            if (gameData && typeof gameData.prediction_accuracy !== 'undefined' && typeof gameData.total_predictions_made !== 'undefined') {
+                if (accuracySpan) accuracySpan.textContent = formatPercentage(gameData.prediction_accuracy);
+                if (totalSpan) totalSpan.textContent = gameData.total_predictions_made;
+                // Show the accuracy display section only if predictions have been made
+                accDisplay.style.display = gameData.total_predictions_made > 0 ? 'block' : 'none';
+            } else {
+                if (accuracySpan) accuracySpan.textContent = 'N/A';
+                if (totalSpan) totalSpan.textContent = '0';
+                accDisplay.style.display = 'none';
             }
         }
 
         function displayPredictions(data) {
-            const predictionsDiv = document.getElementById('predictionsArea');
-            predictionsDiv.innerHTML = '';
+            document.getElementById('gameHistorySummaryGlobal').textContent = `Total games in history: ${data.loaded_history_size || 0}`;
 
-            const summaryDiv = document.getElementById('gameHistorySummary');
-            summaryDiv.textContent = `Total games in history: ${data.loaded_history_size || 0}`;
+            const defaultErrorMsg = '<p>Could not load analysis data.</p>';
+            const defaultNextPredMsg = 'Error';
 
-            if (!data || (data.baccarat.game_count === 0 && data.dragon_tiger.game_count === 0 && data.loaded_history_size === 0)) {
-                predictionsDiv.innerHTML = '<p>No game data available. Submit results to generate analysis.</p>';
-                return;
-            }
-             if (!data || (data.baccarat.game_count === 0 && data.dragon_tiger.game_count === 0 && data.loaded_history_size > 0)) {
-                predictionsDiv.innerHTML = '<p>No Baccarat or Dragon-Tiger game data found in the current history. Submit relevant game results to generate analysis.</p>';
-                return;
-            }
+            // Baccarat Data
+            const baccaratData = data.baccarat || {}; // Default to empty object if data.baccarat is undefined
+            const bNextPredSpan = document.getElementById('baccaratNextPrediction')?.querySelector('span');
+            const bAnalysisItems = document.getElementById('baccaratAnalysisItems');
+            const bAccuracyDisp = document.getElementById('baccaratPredictionAccuracy');
 
-            const createGameBlock = (gameData, title) => {
-                if (!gameData || gameData.game_count === 0) return null;
+            if (bNextPredSpan) bNextPredSpan.textContent = defaultNextPredMsg;
+            if (bAnalysisItems) bAnalysisItems.innerHTML = defaultErrorMsg;
+            if (bAccuracyDisp) bAccuracyDisp.style.display = 'none';
 
-                const gameDiv = document.createElement('div');
-                gameDiv.className = 'prediction-block';
-                gameDiv.innerHTML = `<h3>${title} Analysis</h3>`;
+            displayNextPrediction(baccaratData, 'baccaratNextPrediction');
+            displayGameAnalysis(baccaratData, 'baccaratAnalysisItems');
+            displayPredictionAccuracy(baccaratData, 'baccaratPredictionAccuracy');
 
-                const list = document.createElement('ul');
-                list.innerHTML += `<li><strong>Total ${title} Games:</strong> ${gameData.game_count}</li>`;
+            // Dragon-Tiger Data
+            const dragonTigerData = data.dragon_tiger || {}; // Default to empty object
+            const dtNextPredSpan = document.getElementById('dragonTigerNextPrediction')?.querySelector('span');
+            const dtAnalysisItems = document.getElementById('dragonTigerAnalysisItems');
+            const dtAccuracyDisp = document.getElementById('dragonTigerPredictionAccuracy');
 
-                if (gameData.percentages && Object.keys(gameData.percentages).length > 0) {
-                    let percentagesStr = Object.entries(gameData.percentages)
-                        .map(([winner, pct]) => `${winner.charAt(0).toUpperCase() + winner.slice(1)}: ${formatPercentage(pct)}`)
-                        .join('; ');
-                    list.innerHTML += `<li><strong>Win Percentages:</strong> ${percentagesStr}</li>`;
-                } else {
-                    list.innerHTML += `<li><strong>Win Percentages:</strong> Not enough data.</li>`;
-                }
+            if (dtNextPredSpan) dtNextPredSpan.textContent = defaultNextPredMsg;
+            if (dtAnalysisItems) dtAnalysisItems.innerHTML = defaultErrorMsg;
+            if (dtAccuracyDisp) dtAccuracyDisp.style.display = 'none';
 
-                if (gameData.current_streak && gameData.current_streak.winner) {
-                    list.innerHTML += `<li><strong>Current Streak:</strong> ${gameData.current_streak.winner.charAt(0).toUpperCase() + gameData.current_streak.winner.slice(1)} (Count: ${gameData.current_streak.count})</li>`;
-                } else {
-                     list.innerHTML += `<li><strong>Current Streak:</strong> No current streak.</li>`;
-                }
-
-                if (gameData.last_n_games && gameData.last_n_games.length > 0) {
-                    let lastGamesStr = gameData.last_n_games
-                        .map(g => `${g.winner.charAt(0).toUpperCase() + g.winner.slice(1)} <small>(${formatTimestamp(g.timestamp)})</small>`)
-                        .join(', ');
-                    list.innerHTML += `<li><strong>Last ${gameData.last_n_games.length} Games (most recent first):</strong> ${lastGamesStr}</li>`;
-                } else {
-                    list.innerHTML += `<li><strong>Last Games:</strong> No recent games recorded.</li>`;
-                }
-                gameDiv.appendChild(list);
-                return gameDiv;
-            };
-
-            const baccaratBlock = createGameBlock(data.baccarat, 'Baccarat');
-            if (baccaratBlock) predictionsDiv.appendChild(baccaratBlock);
-
-            const dtBlock = createGameBlock(data.dragon_tiger, 'Dragon-Tiger');
-            if (dtBlock) predictionsDiv.appendChild(dtBlock);
-
-            // Fallback message if specific game types are empty but general history is not
-            if (!baccaratBlock && !dtBlock && data.loaded_history_size > 0) {
-                 predictionsDiv.innerHTML = '<p>No Baccarat or Dragon-Tiger game data found in history to analyze. Other game types might exist.</p>';
-            }
+            displayNextPrediction(dragonTigerData, 'dragonTigerNextPrediction');
+            displayGameAnalysis(dragonTigerData, 'dragonTigerAnalysisItems');
+            displayPredictionAccuracy(dragonTigerData, 'dragonTigerPredictionAccuracy');
         }
 
         async function fetchPredictions() {
-            const predictionsDiv = document.getElementById('predictionsArea');
-            const initialMessage = "<p>Loading analysis...</p>";
-            predictionsDiv.innerHTML = initialMessage;
-            document.getElementById('gameHistorySummary').textContent = 'Loading summary...';
+            const loadingText = 'Loading...';
+            const errorLoadingText = 'Error'; // Simpler error text for spans
+            const noDataText = '<p>Loading analysis...</p>'; // Initial message for analysis block
 
+            // Set initial loading states
+            const elementsToUpdate = [
+                {id: 'baccaratNextPrediction', type: 'span', default: loadingText},
+                {id: 'baccaratAnalysisItems', type: 'div', default: noDataText},
+                {id: 'baccaratPredictionAccuracy', type: 'hide'},
+                {id: 'dragonTigerNextPrediction', type: 'span', default: loadingText},
+                {id: 'dragonTigerAnalysisItems', type: 'div', default: noDataText},
+                {id: 'dragonTigerPredictionAccuracy', type: 'hide'}
+            ];
+
+            elementsToUpdate.forEach(el => {
+                const domEl = document.getElementById(el.id);
+                if (!domEl) return;
+                if (el.type === 'span') domEl.querySelector('span').textContent = el.default;
+                else if (el.type === 'div') domEl.innerHTML = el.default;
+                else if (el.type === 'hide') domEl.style.display = 'none';
+            });
+            document.getElementById('gameHistorySummaryGlobal').textContent = 'Loading history summary...';
 
             try {
                 const response = await fetch(`${API_BASE_URL}/get_predictions`);
@@ -320,53 +366,27 @@
                     throw new Error(`HTTP error ${response.status}: ${errorResult?.error || response.statusText}`);
                 }
                 const data = await response.json();
-                displayPredictions(data);
+                displayPredictions(data); // This will set correct values or "no data" messages
             } catch (error) {
                 console.error('Error fetching predictions:', error);
-                predictionsDiv.innerHTML = `<p style="color:red;">Could not load analysis: ${error.message}</p>`;
-                document.getElementById('gameHistorySummary').textContent = 'Failed to load game history summary.';
+                const errorHtml = `<p style="color:red;">Could not load analysis: ${error.message}</p>`;
+                elementsToUpdate.forEach(el => {
+                     const domEl = document.getElementById(el.id);
+                     if (!domEl) return;
+                     if (el.type === 'span') domEl.querySelector('span').textContent = errorLoadingText;
+                     else if (el.type === 'div') domEl.innerHTML = errorHtml;
+                });
+                document.getElementById('gameHistorySummaryGlobal').textContent = 'Failed to load game history summary.';
             }
         }
 
-        function handleResetHistory() {
-            if (!confirm("Are you sure you want to reset all game history? This action cannot be undone.")) {
-                return;
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstTabButton = document.querySelector('.tab-button'); // Default to Baccarat tab
+            if (firstTabButton) {
+                openTab({currentTarget: firstTabButton}, 'baccaratTab'); // Simulate click event object
             }
-
-            const button = document.getElementById("resetHistoryButton");
-            const originalButtonText = button.textContent;
-            button.textContent = "Resetting...";
-            button.disabled = true;
-
-            fetch(`${API_BASE_URL}/reset_history`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().catch(() => null).then(errorBody => {
-                        throw new Error(`HTTP error ${response.status}: ${errorBody?.error || response.statusText}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                displayStatusMessage(data.message || "Game history reset successfully!", true);
-                fetchPredictions(); // Refresh the predictions display
-            })
-            .catch(error => {
-                console.error("Error resetting history:", error);
-                displayStatusMessage("Error resetting history: " + error.message, false);
-            })
-            .finally(() => {
-                button.textContent = originalButtonText;
-                button.disabled = false;
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchPredictions);
+            fetchPredictions();
+        });
     </script>
 </body>
 </html>
