@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A simple web tool for analyzing Baccarat and Dragon-Tiger game results and viewing basic predictions.">
+    <title>Game Results Analyzer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #212529;
+            line-height: 1.6;
+        }
+        .app-header {
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .app-header h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        .container {
+            max-width: 850px;
+            margin: auto;
+            padding: 20px;
+        }
+        h2, h3 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-top: 25px;
+        }
+        .game-form, .predictions-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        label {
+            margin-right: 10px;
+            font-weight: 500;
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, button {
+            padding: 12px 18px;
+            margin-top: 5px;
+            margin-right: 10px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            font-size: 1em;
+            transition: box-shadow 0.15s ease-in-out, border-color 0.15s ease-in-out;
+        }
+        select:focus, button:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border-color: #007bff;
+        }
+        button:hover {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+        #predictionsArea { margin-top: 15px; }
+        .prediction-block { margin-bottom: 25px; }
+        .prediction-block h3 {
+            margin-top: 0;
+            color: #0069d9;
+            font-size: 1.3em;
+            border-bottom: none; /* Remove double border from h3 if parent h2 has it */
+        }
+        .prediction-block ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .prediction-block li {
+            background-color: #f8f9fa;
+            padding: 10px 12px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            border-left: 4px solid #007bff;
+            font-size: 0.95em;
+        }
+        .prediction-block li strong { color: #495057; }
+        .status-message {
+            margin: 20px 0;
+            padding: 15px 20px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.05em;
+        }
+        .success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+        .game-history-summary {
+            font-size: 0.95em;
+            color: #6c757d;
+            text-align: right;
+            margin-bottom:15px;
+            padding-top: 5px;
+            border-top: 1px solid #eee;
+        }
+        .app-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            font-size: 0.9em;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <h1>Game Results Analyzer</h1>
+    </header>
+
+    <div class="container">
+        <div id="statusMessage" class="status-message" style="display:none;"></div>
+
+        <div class="game-form">
+            <h2>Enter Game Result</h2>
+            <form id="baccaratForm" style="margin-bottom:15px;">
+                <label for="baccaratWinner">Baccarat Winner:</label>
+                <select id="baccaratWinner" name="winner">
+                    <option value="player">Player</option>
+                    <option value="banker">Banker</option>
+                    <option value="tie">Tie</option>
+                </select>
+                <button type="button" onclick="submitGameResult('baccarat')">Submit Baccarat</button>
+            </form>
+            <form id="dragonTigerForm">
+                <label for="dragonTigerWinner">Dragon-Tiger Winner:</label>
+                <select id="dragonTigerWinner" name="winner">
+                    <option value="dragon">Dragon</option>
+                    <option value="tiger">Tiger</option>
+                    <option value="tie">Tie</option>
+                </select>
+                <button type="button" onclick="submitGameResult('dragon-tiger')">Submit Dragon-Tiger</button>
+            </form>
+        </div>
+
+        <div class="predictions-section">
+            <h2>Analysis &amp; Predictions</h2>
+            <button type="button" id="resetHistoryButton" onclick="handleResetHistory()" style="background-color: #dc3545; border-color: #dc3545; margin-bottom: 15px; padding: 10px 15px; font-size: 0.95em;">Reset All Game History</button>
+            <div id="gameHistorySummary" class="game-history-summary"></div>
+            <div id="predictionsArea">
+                <p>Submit a game result or wait for initial data to load to see analysis.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <p>&copy; 2023 Game Analyzer. For entertainment and analytical purposes only.</p>
+        <p><small>Note: If deployed on a free tier, data may be ephemeral and reset periodically.</small></p>
+    </footer>
+
+    <script>
+        const API_BASE_URL = "/api";
+
+        function displayStatusMessage(message, isSuccess) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + (isSuccess ? 'success' : 'error');
+            statusDiv.style.display = 'block';
+            // Scroll into view smoothly
+            statusDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 7000); // Increased display time
+        }
+
+        async function submitGameResult(gameType) {
+            let winner;
+            let formId;
+            if (gameType === 'baccarat') {
+                winner = document.getElementById('baccaratWinner').value;
+                formId = 'baccaratForm';
+            } else if (gameType === 'dragon-tiger') {
+                winner = document.getElementById('dragonTigerWinner').value;
+                formId = 'dragonTigerForm';
+            } else {
+                displayStatusMessage("Error: Unknown game type.", false);
+                return;
+            }
+
+            const payload = { game_type: gameType, winner: winner };
+            const button = document.querySelector(`#${formId} button`);
+            const originalButtonText = button.textContent;
+            button.textContent = 'Submitting...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/submit_result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    displayStatusMessage(result.message || "Result submitted successfully!", true);
+                    fetchPredictions();
+                } else {
+                    displayStatusMessage(result.error || "Failed to submit result: " + response.statusText, false);
+                }
+            } catch (error) {
+                displayStatusMessage("Error submitting result: " + error.message, false);
+            } finally {
+                button.textContent = originalButtonText;
+                button.disabled = false;
+            }
+        }
+
+        function formatPercentage(value) {
+            return parseFloat(value).toFixed(2) + '%';
+        }
+
+        function formatTimestamp(isoString) {
+            if (!isoString || isoString === 'N/A') return 'N/A'; // Handle N/A from backend if timestamp was missing
+            try {
+                const date = new Date(isoString);
+                 // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return 'Invalid Date';
+                }
+                // Using specific options for a clearer, more standardized format
+                return date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+            } catch (e) {
+                console.error("Error formatting timestamp:", isoString, e);
+                return 'Date Error';
+            }
+        }
+
+        function displayPredictions(data) {
+            const predictionsDiv = document.getElementById('predictionsArea');
+            predictionsDiv.innerHTML = '';
+
+            const summaryDiv = document.getElementById('gameHistorySummary');
+            summaryDiv.textContent = `Total games in history: ${data.loaded_history_size || 0}`;
+
+            if (!data || (data.baccarat.game_count === 0 && data.dragon_tiger.game_count === 0 && data.loaded_history_size === 0)) {
+                predictionsDiv.innerHTML = '<p>No game data available. Submit results to generate analysis.</p>';
+                return;
+            }
+             if (!data || (data.baccarat.game_count === 0 && data.dragon_tiger.game_count === 0 && data.loaded_history_size > 0)) {
+                predictionsDiv.innerHTML = '<p>No Baccarat or Dragon-Tiger game data found in the current history. Submit relevant game results to generate analysis.</p>';
+                return;
+            }
+
+            const createGameBlock = (gameData, title) => {
+                if (!gameData || gameData.game_count === 0) return null;
+
+                const gameDiv = document.createElement('div');
+                gameDiv.className = 'prediction-block';
+                gameDiv.innerHTML = `<h3>${title} Analysis</h3>`;
+
+                const list = document.createElement('ul');
+                list.innerHTML += `<li><strong>Total ${title} Games:</strong> ${gameData.game_count}</li>`;
+
+                if (gameData.percentages && Object.keys(gameData.percentages).length > 0) {
+                    let percentagesStr = Object.entries(gameData.percentages)
+                        .map(([winner, pct]) => `${winner.charAt(0).toUpperCase() + winner.slice(1)}: ${formatPercentage(pct)}`)
+                        .join('; ');
+                    list.innerHTML += `<li><strong>Win Percentages:</strong> ${percentagesStr}</li>`;
+                } else {
+                    list.innerHTML += `<li><strong>Win Percentages:</strong> Not enough data.</li>`;
+                }
+
+                if (gameData.current_streak && gameData.current_streak.winner) {
+                    list.innerHTML += `<li><strong>Current Streak:</strong> ${gameData.current_streak.winner.charAt(0).toUpperCase() + gameData.current_streak.winner.slice(1)} (Count: ${gameData.current_streak.count})</li>`;
+                } else {
+                     list.innerHTML += `<li><strong>Current Streak:</strong> No current streak.</li>`;
+                }
+
+                if (gameData.last_n_games && gameData.last_n_games.length > 0) {
+                    let lastGamesStr = gameData.last_n_games
+                        .map(g => `${g.winner.charAt(0).toUpperCase() + g.winner.slice(1)} <small>(${formatTimestamp(g.timestamp)})</small>`)
+                        .join(', ');
+                    list.innerHTML += `<li><strong>Last ${gameData.last_n_games.length} Games (most recent first):</strong> ${lastGamesStr}</li>`;
+                } else {
+                    list.innerHTML += `<li><strong>Last Games:</strong> No recent games recorded.</li>`;
+                }
+                gameDiv.appendChild(list);
+                return gameDiv;
+            };
+
+            const baccaratBlock = createGameBlock(data.baccarat, 'Baccarat');
+            if (baccaratBlock) predictionsDiv.appendChild(baccaratBlock);
+
+            const dtBlock = createGameBlock(data.dragon_tiger, 'Dragon-Tiger');
+            if (dtBlock) predictionsDiv.appendChild(dtBlock);
+
+            // Fallback message if specific game types are empty but general history is not
+            if (!baccaratBlock && !dtBlock && data.loaded_history_size > 0) {
+                 predictionsDiv.innerHTML = '<p>No Baccarat or Dragon-Tiger game data found in history to analyze. Other game types might exist.</p>';
+            }
+        }
+
+        async function fetchPredictions() {
+            const predictionsDiv = document.getElementById('predictionsArea');
+            const initialMessage = "<p>Loading analysis...</p>";
+            predictionsDiv.innerHTML = initialMessage;
+            document.getElementById('gameHistorySummary').textContent = 'Loading summary...';
+
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_predictions`);
+                if (!response.ok) {
+                    const errorResult = await response.json().catch(() => null);
+                    throw new Error(`HTTP error ${response.status}: ${errorResult?.error || response.statusText}`);
+                }
+                const data = await response.json();
+                displayPredictions(data);
+            } catch (error) {
+                console.error('Error fetching predictions:', error);
+                predictionsDiv.innerHTML = `<p style="color:red;">Could not load analysis: ${error.message}</p>`;
+                document.getElementById('gameHistorySummary').textContent = 'Failed to load game history summary.';
+            }
+        }
+
+        function handleResetHistory() {
+            if (!confirm("Are you sure you want to reset all game history? This action cannot be undone.")) {
+                return;
+            }
+
+            const button = document.getElementById("resetHistoryButton");
+            const originalButtonText = button.textContent;
+            button.textContent = "Resetting...";
+            button.disabled = true;
+
+            fetch(`${API_BASE_URL}/reset_history`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().catch(() => null).then(errorBody => {
+                        throw new Error(`HTTP error ${response.status}: ${errorBody?.error || response.statusText}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayStatusMessage(data.message || "Game history reset successfully!", true);
+                fetchPredictions(); // Refresh the predictions display
+            })
+            .catch(error => {
+                console.error("Error resetting history:", error);
+                displayStatusMessage("Error resetting history: " + error.message, false);
+            })
+            .finally(() => {
+                button.textContent = originalButtonText;
+                button.disabled = false;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchPredictions);
+    </script>
+</body>
+</html>
