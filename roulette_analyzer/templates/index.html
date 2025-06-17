@@ -22,10 +22,26 @@
 
     <h2>Enter Roulette Numbers</h2>
     <form method="POST" action="{{ url_for('analyze_results') }}">
-        <textarea name="roulette_numbers" rows="5" cols="30" placeholder="Enter numbers separated by commas, spaces, or new lines (e.g., 10, 23, 5, 0)"></textarea>
+        <textarea name="roulette_numbers" rows="5" cols="30" placeholder="Enter numbers separated by commas, spaces, or new lines (e.g., 10, 23, 5, 0)">{{ ocr_prefill_numbers if ocr_prefill_numbers else '' }}</textarea>
+        <br>
+        <small><em>Alternatively, scroll down to upload a screenshot of results.</em></small>
         <br><br>
         <input type="submit" value="Analyze Results">
     </form>
+
+    <div class="ocr-upload-section" style="margin-top: 30px; margin-bottom: 20px; padding:15px; background-color:#e9ecef; border-radius:5px;">
+        <h4>Optional: Upload Screenshot of Results</h4>
+        <p style="font-size:0.9em; color:#555;">If you have a screenshot of the roulette results, you can upload it here. The system will attempt to extract numbers using OCR. Please review extracted numbers before analyzing.</p>
+        <form method="POST" action="{{ url_for('ocr_upload_route') }}" enctype="multipart/form-data">
+            <div>
+                <label for="screenshot_image">Select image to upload:</label>
+                <input type="file" id="screenshot_image" name="screenshot_image" accept="image/png, image/jpeg, image/gif" required>
+            </div>
+            <div style="margin-top:10px;">
+                <input type="submit" value="Upload and Extract Numbers from Image" style="background-color: #007bff; border-color: #007bff;">
+            </div>
+        </form>
+    </div>
 
     {% if parsing_messages and parsing_messages|length > 0 %}
     <div class="messages info">

@@ -1,0 +1,29 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* WARNING: failed to open cookie file "cookies.txt"
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:5000...
+* Connected to 127.0.0.1 (127.0.0.1) port 5000
+> POST /ocr_upload HTTP/1.1
+> Host: 127.0.0.1:5000
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Content-Length: 229
+> Content-Type: multipart/form-data; boundary=------------------------CyBkK9UNDQZyigdh3U1BW0
+>
+} [229 bytes data]
+* We are completely uploaded and fine
+< HTTP/1.1 302 FOUND
+< Server: Werkzeug/3.1.3 Python/3.10.17
+< Date: Tue, 17 Jun 2025 04:49:37 GMT
+< Content-Type: text/html; charset=utf-8
+< Content-Length: 189
+< Location: /
+< Vary: Cookie
+* Added cookie session=".eJxNyTEKwzAMQNGrCC1ZSrtn6zlKCMaWHYErGUkZSsjdWzJ1-h_egWvtyTdynF8HQvyCZKaGN3wKXAua825GBYZpJneWBrER8Ds1gsqdZshJRAO4kATXz5_BtI-uqfgjyGO94D6kTbicy_kFqrwuiw.aFDz4Q.ZPye_9gfvDr1z0RTFQnplMTVmMM" for domain 127.0.0.1, path /, expire 0
+< Set-Cookie: session=.eJxNyTEKwzAMQNGrCC1ZSrtn6zlKCMaWHYErGUkZSsjdWzJ1-h_egWvtyTdynF8HQvyCZKaGN3wKXAua825GBYZpJneWBrER8Ds1gsqdZshJRAO4kATXz5_BtI-uqfgjyGO94D6kTbicy_kFqrwuiw.aFDz4Q.ZPye_9gfvDr1z0RTFQnplMTVmMM; HttpOnly; Path=/
+< Connection: close
+<
+{ [189 bytes data]
+100   418  100   189  100   229   3742   4534 --:--:-- --:--:-- --:--:--  8196100   418  100   189  100   229   3732   4522 --:--:-- --:--:-- --:--:--  8196
+* Closing connection

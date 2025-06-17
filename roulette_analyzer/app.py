@@ -1,8 +1,18 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash # Added redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 import json # For pretty printing in placeholders
+import os
+from werkzeug.utils import secure_filename
+import pytesseract
+from PIL import Image
 
 app = Flask(__name__)
 app.secret_key = 'super secret key' # Important for session management
+
+# Configure Upload Folder
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # Import your existing analysis and prediction functions
 # Assuming they are in roulette_analyzer/src/
@@ -12,7 +22,7 @@ sys.path.append('src') # Add src to path to find modules
 # For now, direct import from analysis_engine and prediction_engine, assuming they are in src
 from analysis_engine import (
     calculate_frequencies, identify_trends, detect_patterns,
-    detect_biases, analyze_wheel_clusters, WHEEL_ORDER, ROULETTE_WHEEL # Added ROULETTE_WHEEL
+    detect_biases, analyze_wheel_clusters, WHEEL_ORDER, ROULETTE_WHEEL
 )
 from prediction_engine import generate_predictions
 
@@ -65,17 +75,111 @@ def parse_web_input(input_string: str) -> tuple[list[int], list[str]]:
     return valid_numbers, messages
 
 
+# Helper function to parse numbers from OCR text
+def parse_numbers_from_ocr_text(text: str) -> str:
+    # This is a very basic parser. It will need significant improvement
+    # based on typical OCR output for roulette screenshots.
+    # It looks for sequences of digits, possibly separated by common delimiters.
+    import re
+    # Remove anything that's not a digit or a common delimiter (space, comma, newline, semicolon)
+    # This is a very naive first pass.
+    cleaned_text = re.sub(r'[^0-9\s,;\n]', '', text)
+    # Find sequences of 1 or 2 digits. Using \b for word boundaries might be too restrictive if numbers are close.
+    # Instead, split by common delimiters then validate.
+    potential_numbers = re.split(r'[\s,;\n]+', cleaned_text)
+
+    valid_roulette_numbers = []
+    for num_str in potential_numbers:
+        if num_str.isdigit(): # Check if it's purely digits after split
+            try:
+                num = int(num_str)
+                if 0 <= num <= 36:
+                    valid_roulette_numbers.append(str(num))
+            except ValueError:
+                continue
+
+    return ", ".join(valid_roulette_numbers) # Return as a comma-separated string
+
+
+@app.route('/ocr_upload', methods=['POST'])
+def ocr_upload_route():
+    # flash("Debug: Testing flash message directly from ocr_upload_route.", "debug") # DEBUG FLASH - REMOVING THIS FOR ACTUAL TEST
+    if 'screenshot_image' not in request.files:
+        flash('No image file selected for upload.', 'error')
+        return redirect(url_for('home'))
+
+    file = request.files['screenshot_image']
+    if file.filename == '':
+        flash('No image file selected for upload.', 'error')
+        return redirect(url_for('home'))
+
+    if file: # Basic check if file exists
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        try:
+            file.save(filepath) # File is saved, but not processed by PIL for these tests
+
+            file.save(filepath)
+
+            # OCR Processing
+            img = Image.open(filepath) # Restored
+            img = img.convert('L') # Convert to grayscale # Restored
+
+            # --- OCR-dependent part ---
+            try:
+                ocr_text = pytesseract.image_to_string(img) # Restored
+                extracted_numbers_str = parse_numbers_from_ocr_text(ocr_text)
+
+                if extracted_numbers_str:
+                    flash(f"Numbers extracted via OCR. Please review and click 'Analyze Results' if correct. Extracted: {extracted_numbers_str}", 'info')
+                    session['ocr_extracted_numbers'] = extracted_numbers_str
+                else:
+                    flash("OCR did not find any recognizable roulette numbers (0-36) in the image. Please try manual input or a clearer image.", 'warning')
+                    session.pop('ocr_extracted_numbers', None)
+
+            except pytesseract.TesseractNotFoundError: # Restored this specific exception
+                flash("OCR Error: Tesseract OCR engine is not installed or not found in PATH. Please install Tesseract to use this feature (see README for details).", 'error')
+                session.pop('ocr_extracted_numbers', None)
+            except Exception as e_ocr:
+                flash(f"An error occurred during OCR processing: {str(e_ocr)}", 'error') # General OCR error
+                session.pop('ocr_extracted_numbers', None)
+            # --- End of OCR-dependent part ---
+
+        except Exception as e_file: # For file saving or Image.open errors
+            flash(f"An error occurred processing the image file: {str(e_file)}", 'error')
+            session.pop('ocr_extracted_numbers', None)
+        finally:
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except Exception as e_remove:
+                    print(f"Error removing uploaded file {filepath}: {e_remove}") # Log this error
+    else:
+        flash('Invalid file or file type for upload.', 'error') # Should be caught by browser accept ideally
+
+    return redirect(url_for('home'))
+
+
 @app.route('/')
 def home():
     session.setdefault('roulette_numbers_history', [])
     history_display = ", ".join(map(str, session.get('roulette_numbers_history', [])[-50:]))
-    # Get any messages flashed from previous redirects, if applicable
-    parsing_messages = session.pop('parsing_messages', [])
+
+    # Get OCR extracted numbers if available and then clear from session
+    ocr_prefill_numbers = session.pop('ocr_extracted_numbers', '') # Pop to use it once
+
+    # Get any flashed parsing messages (e.g. from previous direct POST to /analyze if it were to redirect)
+    # Note: flash messages are typically handled by get_flashed_messages in template directly.
+    # This specific session.pop for 'parsing_messages' was from an earlier design idea.
+    # For OCR prefill, 'ocr_prefill_numbers' is now the primary mechanism.
+    # Parsing messages from manual input are handled within the /analyze POST itself.
+    # Flashed messages from /ocr_upload will be handled by Jinja's get_flashed_messages.
+
     return render_template('index.html',
                            results_available=False,
                            numbers_history_display=history_display,
-                           parsing_messages=parsing_messages,
-                           color_map=ROULETTE_WHEEL) # Added color_map
+                           color_map=ROULETTE_WHEEL,
+                           ocr_prefill_numbers=ocr_prefill_numbers) # Pass this to template
 
 @app.route('/analyze', methods=['POST'])
 def analyze_results():
