@@ -10,6 +10,16 @@
 <div class="container">
     <h1>European Roulette Analyzer</h1>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashed-messages" style="margin-bottom: 15px;">
+        {% for category, message in messages %}
+          <div class="messages {{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <h2>Enter Roulette Numbers</h2>
     <form method="POST" action="{{ url_for('analyze_results') }}">
         <textarea name="roulette_numbers" rows="5" cols="30" placeholder="Enter numbers separated by commas, spaces, or new lines (e.g., 10, 23, 5, 0)"></textarea>
@@ -303,6 +313,12 @@
     <hr>
     <h3>Current Numbers History (Last 50)</h3>
     <p>{{ numbers_history_display if numbers_history_display else "No numbers entered yet for this session." }}</p>
+
+    <div style="margin-top: 20px; margin-bottom: 20px;">
+        <form method="POST" action="{{ url_for('reset_session') }}" style="display: inline;">
+            <input type="submit" value="Clear All History & Start New Session" style="background-color: #d9534f; border-color: #d43f3a;">
+        </form>
+    </div>
 
 </div> {# End of .container #}
 </body>

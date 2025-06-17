@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for, flash # Added redirect, url_for, flash
 import json # For pretty printing in placeholders
 
 app = Flask(__name__)
@@ -151,6 +151,18 @@ def analyze_results():
                             success_message=success_message,
                             error_message=general_error_message if general_error_message else None,
                             color_map=ROULETTE_WHEEL) # Added color_map
+
+@app.route('/reset', methods=['POST'])
+def reset_session():
+    # Clear the specific session variable for roulette numbers history
+    session.pop('roulette_numbers_history', None)
+    # session['roulette_numbers_history'] = [] # Alternative
+    # session.modified = True
+
+    flash('Session cleared. You can start a new analysis with fresh numbers.', 'info')
+
+    # Redirect back to the home page
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
