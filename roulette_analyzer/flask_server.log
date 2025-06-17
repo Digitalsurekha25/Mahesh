@@ -6,6 +6,4 @@ Press CTRL+C to quit
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 492-641-084
-127.0.0.1 - - [17/Jun/2025 03:07:58] "POST /analyze HTTP/1.1" 200 -
-127.0.0.1 - - [17/Jun/2025 03:07:58] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [17/Jun/2025 03:07:58] "POST /analyze HTTP/1.1" 200 -
+127.0.0.1 - - [17/Jun/2025 03:22:36] "POST /analyze HTTP/1.1" 200 -

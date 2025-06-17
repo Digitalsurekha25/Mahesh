@@ -111,7 +111,8 @@ EXPECTED_PROBABILITIES = {
 # For numbers, a larger deviation might be needed due to lower individual expected frequencies.
 HOT_COLD_NUMBER_THRESHOLD_PERCENTAGE = 0.50 # +/- 50% from expected count
 CATEGORY_TREND_THRESHOLD_PERCENTAGE = 0.25 # +/- 25% from expected count for colors, dozens etc.
-MIN_SPINS_FOR_TRENDS = 20 # Minimum number of spins to attempt trend analysis
+MIN_SPINS_FOR_TRENDS = 5 # Minimum number of spins to attempt trend analysis
+LOW_SPIN_WARNING_THRESHOLD_TRENDS = 20 # Threshold for a low data warning
 
 def identify_trends(frequencies: dict, total_spins: int) -> dict:
     """
@@ -136,14 +137,24 @@ def identify_trends(frequencies: dict, total_spins: int) -> dict:
     if total_spins < MIN_SPINS_FOR_TRENDS:
         trends["message"] = f"Insufficient data for trend analysis (minimum {MIN_SPINS_FOR_TRENDS} spins required, got {total_spins})."
         return trends
+    elif MIN_SPINS_FOR_TRENDS <= total_spins < LOW_SPIN_WARNING_THRESHOLD_TRENDS:
+        trends["message"] = (
+            f"Trend analysis performed, but results are based on a very small dataset ({total_spins} spins) "
+            "and may not be statistically significant. Interpret with extreme caution."
+        )
+    else:
+        # This will be set later if no specific trends are found or after successful analysis.
+        trends["message"] = "Trend analysis performed." # Default message
 
     # 1. Number Trends
     expected_number_freq = EXPECTED_PROBABILITIES["number"] * total_spins
-    for num in range(37): # Iterate 0-36
-        actual_freq = frequencies["number_frequencies"].get(str(num), 0) # Frequencies keys are strings from JSON conversion
-        if isinstance(list(frequencies["number_frequencies"].keys())[0], int) : # if keys are int
-             actual_freq = frequencies["number_frequencies"].get(num, 0)
+    num_freq_dict = frequencies.get("number_frequencies", {}) # Ensure it's a dict
 
+    for num in range(37): # Iterate 0-36
+        actual_freq = 0
+        if num_freq_dict: # Check if the dictionary is not empty
+            # Try accessing with int key first, then str key if that fails or if first key is str
+            actual_freq = num_freq_dict.get(num, num_freq_dict.get(str(num), 0))
 
         deviation = actual_freq - expected_number_freq
         percent_deviation = (deviation / expected_number_freq) if expected_number_freq > 0 else float('inf') if actual_freq > 0 else 0
@@ -205,10 +216,14 @@ def identify_trends(frequencies: dict, total_spins: int) -> dict:
     analyze_category("halves", frequencies["half_frequencies"], "half", [1, 2])
     analyze_category("even_odd", frequencies["even_odd_frequencies"], "even", ['even', 'odd']) # odd uses 'even' prob
 
+    # Final message update if no specific trends found, but analysis was performed
     if not trends["hot_numbers"] and not trends["cold_numbers"] and not trends["category_trends"]:
-        trends["message"] = "No significant trends identified with current thresholds."
-    elif not trends["message"]: # if no other message (like insufficient data)
-        trends["message"] = "Trend analysis complete."
+        if total_spins >= LOW_SPIN_WARNING_THRESHOLD_TRENDS: # Only override if not already a low spin warning
+            trends["message"] = "Trend analysis performed. No significant trends identified with current thresholds and data."
+        # If it's a low spin count and no trends, the earlier low spin message is more appropriate and remains.
+    elif total_spins >= LOW_SPIN_WARNING_THRESHOLD_TRENDS : # If trends were found and not low spin
+        trends["message"] = "Trend analysis complete. Significant trends identified."
+
 
     return trends
 
@@ -493,8 +508,8 @@ WHEEL_SECTIONS = {
     "Orphelins": ORPHELINS_NUMBERS
 }
 
-MIN_SPINS_FOR_BIAS = 50 # Chi-squared generally needs decent sample size, e.g., expected freq > 5 for most cells.
-                        # (37 numbers * 5 = 185 spins for ideal). 50 is a lower bound for a very rough indication.
+MIN_SPINS_FOR_BIAS = 5 # Minimum spins for bias detection
+LOW_SPIN_WARNING_THRESHOLD_BIAS = 30 # Threshold for low data warning for bias
 CHI_SQUARED_CRITICAL_VALUE_P005_DF36 = 51.0 # Approximate critical value for p=0.05 and df=36
 
 def detect_biases(frequencies: dict, total_spins: int, number_deviations: dict) -> dict:
@@ -519,39 +534,61 @@ def detect_biases(frequencies: dict, total_spins: int, number_deviations: dict) 
     }
 
     if total_spins < MIN_SPINS_FOR_BIAS:
-        bias_analysis["message"] = f"Insufficient data for bias detection (minimum {MIN_SPINS_FOR_BIAS} spins, got {total_spins}). Chi-Squared test not performed."
-        bias_analysis["interpretation"] = "More spins are needed for a meaningful bias assessment."
+        bias_analysis["message"] = f"Insufficient data for bias detection (minimum {MIN_SPINS_FOR_BIAS} spins required, got {total_spins}). Chi-Squared test not performed."
+        bias_analysis["interpretation"] = "More spins are needed for bias assessment."
         return bias_analysis
+    elif MIN_SPINS_FOR_BIAS <= total_spins < LOW_SPIN_WARNING_THRESHOLD_BIAS:
+        bias_analysis["message"] = (
+            f"Bias detection performed. However, with only {total_spins} spins, these results (especially Chi-Squared) "
+            "have very low statistical reliability. Interpret with extreme caution."
+        )
+        bias_analysis["interpretation"] = f"Results based on a very small dataset ({total_spins} spins)."
+    else:
+        bias_analysis["message"] = "Bias detection performed." # Default message if not overwritten
 
     # 1. Chi-Squared Goodness of Fit Test
     expected_freq_per_number = total_spins / 37.0
+    chi_squared_specific_msg = "" # Specific messages about Chi-squared test itself
 
-    if expected_freq_per_number < 5:
-         bias_analysis["chi_squared_test"]["message"] = (
+    if expected_freq_per_number < 1:
+         chi_squared_specific_msg = (
+             f"Critical Warning: Expected frequency per number ({expected_freq_per_number:.2f}) is less than 1. "
+             "Chi-Squared test is highly unreliable and results should be disregarded. Substantially more spins are needed."
+         )
+    elif expected_freq_per_number < 5:
+         chi_squared_specific_msg = (
              f"Warning: Expected frequency per number ({expected_freq_per_number:.2f}) is less than 5. "
              "Chi-Squared test results may be less reliable. Consider more spins."
          )
 
     chi_squared_statistic = 0
-    for num in range(37): # 0-36
-        # Ensure keys from number_deviations are correctly accessed (could be int or str)
-        dev_data_num_key = num if num in number_deviations else str(num)
+    dev_data = number_deviations # from trends output
 
-        if dev_data_num_key not in number_deviations:
-            # This case should ideally not happen if number_deviations is complete
-            # If it does, it means the number never appeared, and its expected freq is used
-            observed_freq = 0
-        else:
-            observed_freq = number_deviations[dev_data_num_key]["actual"]
-
-        chi_squared_statistic += ((observed_freq - expected_freq_per_number)**2) / expected_freq_per_number
-
-    bias_analysis["chi_squared_test"]["statistic"] = round(chi_squared_statistic, 2)
-    if chi_squared_statistic > CHI_SQUARED_CRITICAL_VALUE_P005_DF36:
-        bias_analysis["chi_squared_test"]["is_biased_suggestion"] = True
-        bias_analysis["chi_squared_test"]["message"] += " Chi-Squared statistic exceeds critical value, suggesting potential number distribution bias."
+    if not dev_data: # If number_deviations itself is empty or None
+        bias_analysis["chi_squared_test"]["message"] = "Chi-Squared test not performed as number deviation data is unavailable. " + chi_squared_specific_msg
+        bias_analysis["chi_squared_test"]["statistic"] = None
+        bias_analysis["chi_squared_test"]["is_biased_suggestion"] = False
     else:
-        bias_analysis["chi_squared_test"]["message"] += " Chi-Squared statistic is within expected limits, no strong suggestion of number distribution bias."
+        # Determine key type for number_deviations once
+        first_key_in_dev_data = next(iter(dev_data), None)
+        keys_are_int = isinstance(first_key_in_dev_data, int)
+
+        for num in range(37): # 0-36
+            num_key_for_lookup = num if keys_are_int else str(num)
+            observed_freq = dev_data.get(num_key_for_lookup, {}).get("actual", 0)
+
+            if expected_freq_per_number == 0: # Avoid division by zero if total_spins somehow was 0 but passed min check
+                chi_squared_statistic += float('inf') if observed_freq > 0 else 0
+            else:
+                chi_squared_statistic += ((observed_freq - expected_freq_per_number)**2) / expected_freq_per_number
+
+        bias_analysis["chi_squared_test"]["statistic"] = round(chi_squared_statistic, 2)
+        if chi_squared_statistic > CHI_SQUARED_CRITICAL_VALUE_P005_DF36:
+            bias_analysis["chi_squared_test"]["is_biased_suggestion"] = True
+            bias_analysis["chi_squared_test"]["message"] = "Chi-Squared statistic exceeds critical value, suggesting potential number distribution bias. " + chi_squared_specific_msg
+        else:
+            bias_analysis["chi_squared_test"]["message"] = "Chi-Squared statistic is within expected limits. " + chi_squared_specific_msg
+            # No strong suggestion of bias from Chi-squared alone.
 
     # 2. Sectional Bias Analysis
     # Using a threshold similar to CATEGORY_TREND_THRESHOLD_PERCENTAGE for deviation significance
@@ -577,22 +614,25 @@ def detect_biases(frequencies: dict, total_spins: int, number_deviations: dict) 
             "status": status
         }
 
-    # Interpretation
-    if bias_analysis["chi_squared_test"]["is_biased_suggestion"]:
-        bias_analysis["interpretation"] = "Potential bias detected based on Chi-Squared test. "
-        if any(s["status"] != "as_expected" for s in bias_analysis["sectional_bias"].values()):
-            bias_analysis["interpretation"] += "Sectional analysis also shows imbalances. Further investigation or more data recommended."
+    # Interpretation - only append if not already set by low spin warning and if chi_squared_test was performed
+    if not bias_analysis["interpretation"] and bias_analysis["chi_squared_test"].get("statistic") is not None:
+        if bias_analysis["chi_squared_test"]["is_biased_suggestion"]:
+            bias_analysis["interpretation"] = "Potential bias suggested by Chi-Squared test. "
+            if any(s["status"] != "as_expected" for s in bias_analysis["sectional_bias"].values()):
+                bias_analysis["interpretation"] += "Sectional analysis also shows imbalances. Further investigation or more data recommended."
+            else:
+                bias_analysis["interpretation"] += "Sectional analysis does not strongly highlight specific areas, but overall number distribution is suspect."
         else:
-            bias_analysis["interpretation"] += "Sectional analysis does not strongly highlight specific areas, but overall number distribution is suspect."
-    else:
-        bias_analysis["interpretation"] = "No strong evidence of overall bias from Chi-Squared test. "
-        if any(s["status"] != "as_expected" for s in bias_analysis["sectional_bias"].values()):
-            bias_analysis["interpretation"] += "However, some wheel sections show notable deviation, which might warrant closer observation."
-        else:
-            bias_analysis["interpretation"] += "Sectional distributions also appear relatively balanced."
+            bias_analysis["interpretation"] = "No strong evidence of overall bias from Chi-Squared test. "
+            if any(s["status"] != "as_expected" for s in bias_analysis["sectional_bias"].values()):
+                bias_analysis["interpretation"] += "However, some wheel sections show notable deviation, which might warrant closer observation."
+            else:
+                bias_analysis["interpretation"] += "Sectional distributions also appear relatively balanced."
+    elif not bias_analysis["interpretation"]: # If interpretation still not set (e.g. Chi-sq not run)
+        bias_analysis["interpretation"] = "Sectional bias analysis performed."
 
-    if not bias_analysis["message"]:
-        bias_analysis["message"] = "Bias detection analysis complete."
+
+    # The main bias_analysis["message"] is already set based on spin count or default.
     return bias_analysis
 
 
@@ -657,7 +697,8 @@ if __name__ == '__main__':
 WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
 # len(WHEEL_ORDER) should be 37
 
-MIN_SPINS_FOR_CLUSTERS = 30 # Minimum spins for somewhat meaningful cluster analysis
+MIN_SPINS_FOR_CLUSTERS = 5 # Minimum spins for cluster analysis
+LOW_SPIN_WARNING_THRESHOLD_CLUSTERS = 20 # Threshold for low data warning for clusters
 CLUSTER_ARC_SIZE = 5 # Number of adjacent numbers on the wheel to consider as a cluster/arc (e.g., 5 means center + 2 neighbors each side)
 CLUSTER_DEVIATION_THRESHOLD = 0.30 # +/- 30% deviation for an arc to be considered hot/cold
 
@@ -685,6 +726,13 @@ def analyze_wheel_clusters(frequencies: dict, total_spins: int, wheel_order: lis
     if total_spins < MIN_SPINS_FOR_CLUSTERS:
         cluster_analysis["message"] = f"Insufficient data for wheel cluster analysis (minimum {MIN_SPINS_FOR_CLUSTERS} spins required, got {total_spins})."
         return cluster_analysis
+    elif MIN_SPINS_FOR_CLUSTERS <= total_spins < LOW_SPIN_WARNING_THRESHOLD_CLUSTERS:
+        cluster_analysis["message"] = (
+            f"Wheel cluster analysis performed, but with only {total_spins} spins, identified hot/cold zones "
+            "may be due to random chance. Interpret with extreme caution."
+        )
+    else:
+        cluster_analysis["message"] = "Wheel cluster analysis performed." # Default
 
     if CLUSTER_ARC_SIZE % 2 == 0 or CLUSTER_ARC_SIZE < 3:
         cluster_analysis["message"] = f"Invalid CLUSTER_ARC_SIZE ({CLUSTER_ARC_SIZE}). Must be an odd number >= 3."
@@ -734,9 +782,11 @@ def analyze_wheel_clusters(frequencies: dict, total_spins: int, wheel_order: lis
             cluster_analysis["cold_zones"].append(arc_data)
 
     if not cluster_analysis["hot_zones"] and not cluster_analysis["cold_zones"]:
-        cluster_analysis["message"] = "No significant hot or cold wheel zones identified with current settings."
-    elif not cluster_analysis["message"]:
-         cluster_analysis["message"] = "Wheel cluster analysis complete."
+        if total_spins >= LOW_SPIN_WARNING_THRESHOLD_CLUSTERS: # Only override if not already a low spin warning
+            cluster_analysis["message"] = "Wheel cluster analysis performed. No significant hot or cold wheel zones identified with current settings."
+        # If low spin count and no zones, the earlier low spin message is more appropriate.
+    elif total_spins >= LOW_SPIN_WARNING_THRESHOLD_CLUSTERS: # If zones found and not low spin
+         cluster_analysis["message"] = "Wheel cluster analysis complete. Hot/cold zones identified."
 
     return cluster_analysis
 
