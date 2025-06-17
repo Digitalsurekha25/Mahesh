@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>European Roulette Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>European Roulette Analyzer</h1>
+
+    <h2>Enter Roulette Numbers</h2>
+    <form method="POST" action="{{ url_for('analyze_results') }}">
+        <textarea name="roulette_numbers" rows="5" cols="30" placeholder="Enter numbers separated by commas, spaces, or new lines (e.g., 10, 23, 5, 0)"></textarea>
+        <br><br>
+        <input type="submit" value="Analyze Results">
+    </form>
+
+    {% if parsing_messages and parsing_messages|length > 0 %}
+    <div class="messages info">
+        <h4>Input Processing Notes:</h4>
+        <ul>
+        {% for msg in parsing_messages %}
+            <li>{{ msg }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if success_message %}
+        <div class="messages success">{{ success_message }}</div>
+    {% endif %}
+
+    {% if error_message %}
+        <div class="messages error">{{ error_message }}</div>
+    {% endif %}
+
+
+    {% if results_available %}
+    <h2>Analysis Results</h2>
+
+    <!-- Frequency Analysis -->
+    <div id="frequency-analysis" class="analysis-section">
+        <h3>Frequency Analysis</h3>
+        {% if analysis.frequencies and analysis.frequencies.total_spins is not none %}
+            <p><strong>Total Spins:</strong> {{ analysis.frequencies.total_spins }}</p>
+
+            <h4>Number Frequencies:</h4>
+            {% if analysis.frequencies.number_frequencies %}
+                <table>
+                    <thead><tr><th>Number</th><th>Color</th><th>Count</th></tr></thead>
+                    <tbody>
+                        {% for num_str, count in analysis.frequencies.number_frequencies.items() | sort %}
+                            {% set num = num_str | int %} {# Ensure num is int for color_map access #}
+                            <tr>
+                                <td>{{ num }}</td>
+                                <td>{{ color_map[num] if color_map else 'N/A' }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No number frequency data.</p>
+            {% endif %}
+
+            <h4>Color Frequencies:</h4>
+            <ul>{% for color, count in analysis.frequencies.color_frequencies.items() %}<li><span style="text-transform:capitalize;">{{ color }}</span>: {{ count }}</li>{% else %}<li>No color frequency data.</li>{% endfor %}</ul>
+
+            {% for cat_name, key_name in [
+                ('Dozen Frequencies', 'dozen_frequencies'),
+                ('Column Frequencies', 'column_frequencies'),
+                ('Half Frequencies (1-18, 19-36)', 'half_frequencies'),
+                ('Even/Odd Frequencies', 'even_odd_frequencies')
+            ] %}
+                <h4>{{ cat_name }}:</h4>
+                <ul>{% for item, count in analysis.frequencies[key_name].items() %}<li><span style="text-transform:capitalize;">{{ item }}</span>: {{ count }}</li>{% else %}<li>No {{ cat_name.lower() }} data.</li>{% endfor %}</ul>
+            {% endfor %}
+        {% else %}
+            <p>No frequency data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Trend Analysis -->
+    <div id="trend-analysis" class="analysis-section">
+        <h3>Trend Analysis</h3>
+        {% if analysis.trends %}
+            <p><strong>Status:</strong> {{ analysis.trends.message | default('Analysis performed.') }}</p>
+            {% if analysis.trends.message and 'Insufficient data' in analysis.trends.message %}
+                <!-- No further details if insufficient data -->
+            {% else %}
+                {% if analysis.trends.hot_numbers %}
+                    <h4>Hot Numbers:</h4>
+                    <ul>{% for item in analysis.trends.hot_numbers %}<li>Number <span class="hot">{{ item.number }}</span> (Actual: {{ item.actual }}, Expected: {{ "%.1f"|format(item.expected) }})</li>{% endfor %}</ul>
+                {% endif %}
+                {% if analysis.trends.cold_numbers %}
+                    <h4>Cold Numbers:</h4>
+                    <ul>{% for item in analysis.trends.cold_numbers %}<li>Number <span class="cold">{{ item.number }}</span> (Actual: {{ item.actual }}, Expected: {{ "%.1f"|format(item.expected) }})</li>{% endfor %}</ul>
+                {% endif %}
+
+                {% if analysis.trends.number_deviations %}
+                    <h4>Detailed Number Deviations (Most Significant):</h4>
+                    {# Sort by absolute value of percent_deviation to get most significant deviations #}
+                    {% set sorted_deviations = analysis.trends.number_deviations.items() | sort(attribute='1.percent_deviation', reverse=true, case_sensitive=false) %}
+                    {% set top_deviations = [] %}
+                    {% for num_str, data in sorted_deviations %}
+                        {% if (data.percent_deviation | abs) > 0.01 or loop.index <= 5 %} {# Show if deviation > 1% or top 5 by loop #}
+                           {% set _ = top_deviations.append((num_str, data)) %}
+                        {% endif %}
+                    {% endfor %}
+                    <table>
+                        <thead><tr><th>Number</th><th>Actual</th><th>Expected</th><th>Deviation</th><th>% Deviation</th></tr></thead>
+                        <tbody>
+                            {% for num_str, data in top_deviations[:10] %} {# Display up to 10 most significant #}
+                                {% set num = num_str | int %}
+                                <tr class="{% if data.percent_deviation > 0.2 %}hot{% elif data.percent_deviation < -0.2 %}cold{% endif %}">
+                                    <td>{{ num }}</td><td>{{ data.actual }}</td><td>{{ "%.2f"|format(data.expected) }}</td><td>{{ "%.2f"|format(data.deviation) }}</td><td>{{ "%.1f"|format(data.percent_deviation * 100) }}%</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5">No significant number deviations to display.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+
+                {% if analysis.trends.category_trends %}
+                    <h4>Category Trends:</h4>
+                    {% for category, trends_list in analysis.trends.category_trends.items() %}
+                        <h5>{{ category | capitalize }}:</h5>
+                        <ul>
+                        {% for item_name, data in trends_list.items() %}
+                            <li class="{% if data.percent_deviation > 0.1 %}hot{% elif data.percent_deviation < -0.1 %}cold{% endif %}">
+                                <span style="text-transform:capitalize;">{{ item_name }}</span>: Actual: {{ data.actual }}, Expected: {{ "%.1f"|format(data.expected) }}
+                                (Deviation: <span class="{% if data.percent_deviation > 0 %}hot{% elif data.percent_deviation < 0 %}cold{% endif %}">{{ "%.1f"|format(data.percent_deviation * 100) }}%</span>)
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No specific category trends identified.</p>
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <p>No trend data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Pattern Detection -->
+    <div id="pattern-detection" class="analysis-section">
+        <h3>Pattern Detection</h3>
+        {% if analysis.patterns %}
+            <p><strong>Status:</strong> {{ analysis.patterns.message | default('Analysis performed.') }}</p>
+            {% if analysis.patterns.message and 'Insufficient data' in analysis.patterns.message %}
+                <!-- No further details -->
+            {% else %}
+                {% with nr = analysis.patterns.number_repeats %}
+                    {% if nr %}
+                        <h4>Number Repeats:</h4>
+                        <p>Total immediate repeats: {{ nr.total_immediate_repeats | default('N/A') }}</p>
+                        {% if nr.number_for_longest_streak is not none and nr.longest_streak | int > 1 %}
+                            <p>Longest single number streak: <span class="hot">{{ nr.longest_streak }}</span> (for number <span class="hot">{{ nr.number_for_longest_streak }}</span>)</p>
+                        {% endif %}
+                        {% if nr.counts and nr.counts | length > 0 %}
+                            <p>Counts of specific repeating numbers:
+                                {% for num, count in nr.counts.items() %}{{num}}:{{count}}{% if not loop.last %}, {% endif %}{% endfor %}
+                            </p>
+                        {% endif %}
+                    {% endif %}
+                {% endwith %}
+                <p>Longest alternating Red/Black streak: {{ analysis.patterns.alternating_color_streak | default('N/A') }}</p>
+                {% with cd = analysis.patterns.consecutive_dozen_streak %}
+                    {% if cd and cd.longest_streak | int > 1 %} {# Only show if streak > 1 #}
+                        <p>Longest consecutive dozen streak: {{ cd.longest_streak }} (Dozen: {{ cd.dozen }})</p>
+                    {% endif %}
+                {% endwith %}
+                {% with cc = analysis.patterns.consecutive_column_streak %}
+                    {% if cc and cc.longest_streak | int > 1 %} {# Only show if streak > 1 #}
+                        <p>Longest consecutive column streak: {{ cc.longest_streak }} (Column: {{ cc.column }})</p>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+        {% else %}
+            <p>No pattern data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Bias Detection -->
+    <div id="bias-detection" class="analysis-section">
+        <h3>Bias Detection</h3>
+        {% if analysis.biases %}
+            <p><strong>Status:</strong> {{ analysis.biases.message | default('Analysis performed.') }}</p>
+            <p><strong>Overall Interpretation:</strong> {{ analysis.biases.interpretation | default('N/A') }}</p>
+            {% if analysis.biases.message and 'Insufficient data' in analysis.biases.message %}
+                <!-- No further details -->
+            {% else %}
+                {% with cs_test = analysis.biases.chi_squared_test %}
+                    {% if cs_test and cs_test.statistic is not none %}
+                        <h4>Chi-Squared Test:</h4>
+                        <p>Statistic: {{ "%.2f"|format(cs_test.statistic) }} | Critical Value (p=0.05, df=36): {{ "%.2f"|format(cs_test.critical_value) }}</p>
+                        <p>Suggestion: <span class="{% if cs_test.is_biased_suggestion %}hot{% else %}cold{% endif %}">{{ 'Potential bias' if cs_test.is_biased_suggestion else 'No strong bias' }}</span> suggested.</p>
+                        {% if cs_test.message %}<p><em>Note: {{ cs_test.message }}</em></p>{% endif %}
+                    {% endif %}
+                {% endwith %}
+                {% if analysis.biases.sectional_bias %}
+                    <h4>Sectional Bias:</h4>
+                    <ul>
+                    {% for section, data in analysis.biases.sectional_bias.items() %}
+                        <li class="{{ data.status | replace('_', '-') }}"><strong>{{ section }}:</strong> Status: {{ data.status | replace('_', ' ') }}
+                            (Observed: {{ data.observed_hits }}, Expected: {{ "%.1f"|format(data.expected_hits) }},
+                            Deviation: <span class="{% if data.deviation_percent > 10 %}hot{% elif data.deviation_percent < -10 %}cold{% endif %}">{{ "%.1f"|format(data.deviation_percent) }}%</span>)
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <p>No bias data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Wheel Cluster Analysis -->
+    <div id="wheel-cluster-analysis" class="analysis-section">
+        <h3>Wheel Cluster Analysis</h3>
+        {% if analysis.clusters %}
+            <p><strong>Status:</strong> {{ analysis.clusters.message | default('Analysis performed.') }}</p>
+            {% if analysis.clusters.message and 'Insufficient data' in analysis.clusters.message %}
+                <!-- No further details -->
+            {% else %}
+                <p>Arc Size Used: {{ analysis.clusters.arc_size }}</p>
+                {% if analysis.clusters.hot_zones %}
+                    <h4>Hot Wheel Zones:</h4>
+                    <ul>
+                    {% for zone in analysis.clusters.hot_zones %}
+                        <li>Arc centered at <span class="hot">{{ zone.center_number }}</span> (Numbers: {{ zone.arc | join(', ') }})
+                            <br>&nbsp;&nbsp;&nbsp;&nbsp;Observed: {{ zone.observed_freq }}, Expected: {{ "%.1f"|format(zone.expected_freq) }}
+                            (Deviation: <span class="hot">{{ "%.1f"|format(zone.percent_deviation * 100) }}%</span>)
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if analysis.clusters.cold_zones %}
+                    <h4>Cold Wheel Zones:</h4>
+                    <ul>
+                    {% for zone in analysis.clusters.cold_zones %}
+                        <li>Arc centered at <span class="cold">{{ zone.center_number }}</span> (Numbers: {{ zone.arc | join(', ') }})
+                            <br>&nbsp;&nbsp;&nbsp;&nbsp;Observed: {{ zone.observed_freq }}, Expected: {{ "%.1f"|format(zone.expected_freq) }}
+                            (Deviation: <span class="cold">{{ "%.1f"|format(zone.percent_deviation * 100) }}%</span>)
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                <p><em>Note: {{ analysis.clusters.note }}</em></p>
+            {% endif %}
+        {% else %}
+            <p>No wheel cluster data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Predictions -->
+    <div id="predictions" class="predictions-section">
+        <h2>Predictions</h2>
+        {% if predictions and predictions.prediction_summary %}
+            <h4>Prediction Summary:</h4>
+            <ul>{% for note in predictions.prediction_summary %}<li>{{note}}</li>{% endfor %}</ul>
+
+            {% if predictions.predicted_numbers %}
+                <h4>Predicted Numbers:</h4>
+                <ul>{% for p_num in predictions.predicted_numbers %}<li>Number <strong class="hot">{{ p_num.number }}</strong> <span class="prediction-reason">(Reason: {{ p_num.reason }})</span></li>{% endfor %}</ul>
+            {% endif %}
+
+            {% if predictions.predicted_dozens %}
+                <h4>Predicted Dozens:</h4>
+                <ul>{% for p_doz in predictions.predicted_dozens %}<li>Dozen <strong>{{ p_doz.dozen }}</strong> <span class="prediction-reason">(Reason: {{ p_doz.reason }})</span></li>{% endfor %}</ul>
+            {% endif %}
+
+            {% if predictions.predicted_columns %}
+                <h4>Predicted Columns:</h4>
+                <ul>{% for p_col in predictions.predicted_columns %}<li>Column <strong>{{ p_col.column }}</strong> <span class="prediction-reason">(Reason: {{ p_col.reason }})</span></li>{% endfor %}</ul>
+            {% endif %}
+
+            {% with ps = predictions.predicted_sections %}
+                {% if ps and (ps.voisins_tiers_orphelins or ps.halves or ps.even_odd) %}
+                <h4>Predicted Sections/Bets:</h4>
+                <ul>
+                    {% for p_sec in ps.voisins_tiers_orphelins %}<li><strong>{{ p_sec.section }}</strong> <span class="prediction-reason">(Reason: {{ p_sec.reason }})</span></li>{% endfor %}
+                    {% for p_half in ps.halves %}<li>Half <strong>{{ p_half.half }}</strong> <span class="prediction-reason">(Reason: {{ p_half.reason }})</span></li>{% endfor %}
+                    {% for p_eo in ps.even_odd %}<li><strong>{{ p_eo.type }}</strong> <span class="prediction-reason">(Reason: {{ p_eo.reason }})</span></li>{% endfor %}
+                </ul>
+                {% endif %}
+            {% endwith %}
+            <div class="confidence-note">
+                <p><em>{{ predictions.confidence_note }}</em></p>
+            </div>
+        {% else %}
+            <p>No predictions available or not enough data to generate them.</p>
+        {% endif %}
+    </div>
+    {% elif error_message and not results_available %} {# Show error_message only if no results are shown #}
+        <div class="messages error">{{ error_message }}</div>
+    {% endif %}
+
+    <hr>
+    <h3>Current Numbers History (Last 50)</h3>
+    <p>{{ numbers_history_display if numbers_history_display else "No numbers entered yet for this session." }}</p>
+
+</div> {# End of .container #}
+</body>
+</html>
