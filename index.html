@@ -24,10 +24,51 @@
 
         <section id="data-input">
             <h2>Enter Result</h2>
+        <div>
+            <label for="current-dealer-id">Current Dealer ID:</label>
+            <input type="text" id="current-dealer-id" placeholder="e.g., DealerA">
+            <button id="set-dealer-id">Set Dealer</button>
+            <p>Active Dealer: <strong id="active-dealer-display">N/A</strong></p>
+        </div>
+        <hr>
             <input type="number" id="result-input" min="0" max="36" placeholder="Enter number (0-36)">
             <button id="submit-result">Submit Result</button>
             <button id="reset-results">Reset All Results</button>
         </section>
+
+    <section id="custom-group-management">
+        <h2>Custom Number Groups</h2>
+        <div>
+            <label for="custom-group-name">Group Name:</label>
+            <input type="text" id="custom-group-name" placeholder="e.g., My Hot Numbers">
+        </div>
+        <div>
+            <label for="custom-group-numbers">Numbers (comma-separated):</label>
+            <input type="text" id="custom-group-numbers" placeholder="e.g., 1,5,10,15,20">
+        </div>
+        <button id="save-custom-group">Save Custom Group</button>
+
+        <h3>Saved Custom Groups:</h3>
+        <ul id="custom-groups-list">
+            <!-- Custom groups will be listed here -->
+        </ul>
+    </section>
+
+    <section id="neighbour-bet-tool">
+        <h2>Neighbour Bet Analysis</h2>
+        <div>
+            <label for="neighbour-center-number">Center Number (0-36):</label>
+            <input type="number" id="neighbour-center-number" min="0" max="36" value="0">
+        </div>
+        <div>
+            <label for="neighbour-count">Number of Neighbours (1-5 each side):</label>
+            <input type="number" id="neighbour-count" min="1" max="5" value="2">
+        </div>
+        <button id="analyze-neighbour-bet">Analyze Neighbour Bet</button>
+        <div id="neighbour-bet-analysis-result" style="margin-top: 10px;">
+            <!-- Analysis results will be displayed here -->
+        </div>
+    </section>
 
         <section id="results-display">
             <h2>Entered Results</h2>
@@ -59,6 +100,10 @@
                 <!-- Table-based group analysis will be shown here -->
             </div>
         </section>
+        <div id="dealer-filter-controls" style="padding: 10px; margin-bottom:15px; background-color: #f0f0f0;">
+            <label for="filter-by-dealer-checkbox">Filter all analysis by current dealer (<span id="active-dealer-filter-display">N/A</span>)?</label>
+            <input type="checkbox" id="filter-by-dealer-checkbox">
+        </div>
     </main>
 
     <footer>
