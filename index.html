@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Om Namo - European Roulette Analysis</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Om Namo - European Roulette Analysis</h1>
+    </header>
+
+    <main>
+        <section id="visual-representation">
+            <h2>Visuals</h2>
+            <div id="roulette-wheel">
+                <img src="" alt="[Image of a European Roulette Wheel - Placeholder]" width="200">
+            </div>
+            <div id="roulette-table">
+                <img src="" alt="[Image of a Roulette Table Layout - Placeholder]" width="300">
+            </div>
+        </section>
+
+        <section id="data-input">
+            <h2>Enter Result</h2>
+            <input type="number" id="result-input" min="0" max="36" placeholder="Enter number (0-36)">
+            <button id="submit-result">Submit Result</button>
+            <button id="reset-results">Reset All Results</button>
+        </section>
+
+        <section id="results-display">
+            <h2>Entered Results</h2>
+            <div id="results-filter">
+                <label for="filter-select">Show last:</label>
+                <select id="filter-select">
+                    <option value="all">All</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+            <ul id="results-list">
+                <!-- Results will be listed here -->
+            </ul>
+        </section>
+
+        <section id="analysis-output">
+            <h2>Analysis</h2>
+            <div id="number-frequency">
+                <h3>Number Frequency</h3>
+                <!-- Frequency data will be shown here -->
+            </div>
+            <div id="group-analysis">
+                <h3>Group Hit Frequency</h3>
+                <!-- Wheel-based group analysis will be shown here -->
+                <!-- Table-based group analysis will be shown here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; Om Namo Roulette Analysis</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
