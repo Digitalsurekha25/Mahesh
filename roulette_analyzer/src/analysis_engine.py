@@ -21,6 +21,48 @@ NUMBER_TO_COLUMN[0] = None # 0 is not in any column
 NUMBER_TO_HALF = {n: 1 if 1 <= n <= 18 else (2 if 19 <= n <= 36 else None) for n in range(0, 37)} # 1st half (1-18), 2nd half (19-36)
 NUMBER_TO_EVEN_ODD = {n: 'even' if n != 0 and n % 2 == 0 else ('odd' if n != 0 and n % 2 != 0 else None) for n in range(0, 37)}
 
+NUMBER_TO_ROW = {n: ((n-1)//3) + 1 for n in range(1, 37)} # Row 1 to 12
+NUMBER_TO_ROW[0] = None
+
+DIAGONAL_SETS = {
+    "Diag 1-5-9": {1, 5, 9},
+    "Diag 3-5-7": {3, 5, 7},
+    "Diag 2-6-10": {2, 6, 10}
+    # Add more if other common ones are standard, or make this more generic later
+}
+
+NUMBER_TO_QUADRANT = {}
+for n in range(1, 37):
+    if 1 <= n <= 9: NUMBER_TO_QUADRANT[n] = 1
+    elif 10 <= n <= 18: NUMBER_TO_QUADRANT[n] = 2
+    elif 19 <= n <= 27: NUMBER_TO_QUADRANT[n] = 3
+    elif 28 <= n <= 36: NUMBER_TO_QUADRANT[n] = 4
+NUMBER_TO_QUADRANT[0] = None
+
+FINALE_SETS = {
+    "Finale 0": {0, 10, 20, 30},
+    "Finale 1": {1, 11, 21, 31},
+    "Finale 2": {2, 12, 22, 32},
+    "Finale 3": {3, 13, 23, 33},
+    "Finale 4": {4, 14, 24, 34},
+    "Finale 5": {5, 15, 25, 35},
+    "Finale 6": {6, 16, 26, 36},
+    "Finale 7": {7, 17, 27},
+    "Finale 8": {8, 18, 28},
+    "Finale 9": {9, 19, 29}
+}
+
+def get_digit_sum(number: int) -> int:
+    if not isinstance(number, int) or number < 0: # Basic validation
+        return -1 # Or some indicator for invalid input for sum
+    if number == 0:
+        return 0
+    s = 0
+    temp_num = number
+    while temp_num:
+        s += temp_num % 10
+        temp_num //= 10
+    return s
 
 def calculate_frequencies(results: list[int]) -> dict:
     """
@@ -41,6 +83,12 @@ def calculate_frequencies(results: list[int]) -> dict:
             "column_frequencies": Counter(),
             "half_frequencies": Counter(),
             "even_odd_frequencies": Counter(),
+            "zero_spiel_hits": 0,
+            "row_frequencies": Counter(),
+            "diagonal_frequencies": Counter(),
+            "quadrant_frequencies": Counter(),
+            "finale_frequencies": Counter(),
+            "digit_sum_frequencies": Counter(),
             "total_spins": 0
         }
 
@@ -63,6 +111,37 @@ def calculate_frequencies(results: list[int]) -> dict:
     even_odd_counts = Counter(NUMBER_TO_EVEN_ODD.get(n) for n in results if n != 0)
     if None in even_odd_counts: del even_odd_counts[None]
 
+    zero_spiel_hits = sum(1 for n in results if n in ZERO_SPIEL_NUMBERS)
+
+    # Row Frequencies
+    row_counts = Counter(NUMBER_TO_ROW.get(n) for n in results if n != 0)
+    if None in row_counts: del row_counts[None]
+
+    # Diagonal Frequencies (for specified sets)
+    diagonal_counts = Counter()
+    for name, num_set in DIAGONAL_SETS.items():
+        hits = sum(1 for n in results if n in num_set)
+        if hits > 0: # Only store if the diagonal had hits
+            diagonal_counts[name] = hits
+
+    # Quadrant Frequencies
+    quadrant_counts = Counter(NUMBER_TO_QUADRANT.get(n) for n in results if n != 0)
+    if None in quadrant_counts: del quadrant_counts[None]
+
+    # Finale Frequencies
+    finale_counts = Counter()
+    for name, num_set in FINALE_SETS.items():
+        hits = sum(1 for n in results if n in num_set)
+        if hits > 0: # Only store if the finale group had hits
+            finale_counts[name] = hits
+
+    # Digit Sum Frequencies
+    digit_sum_counts = Counter()
+    for n in results:
+        ds = get_digit_sum(n)
+        if ds != -1: # Ensure valid sum was calculated
+            digit_sum_counts[ds] += 1
+
     return {
         "number_frequencies": dict(number_counts),
         "color_frequencies": dict(color_counts),
@@ -70,6 +149,12 @@ def calculate_frequencies(results: list[int]) -> dict:
         "column_frequencies": dict(column_counts),
         "half_frequencies": dict(half_counts),
         "even_odd_frequencies": dict(even_odd_counts),
+        "zero_spiel_hits": zero_spiel_hits,
+        "row_frequencies": dict(row_counts),
+        "diagonal_frequencies": dict(diagonal_counts),
+        "quadrant_frequencies": dict(quadrant_counts),
+        "finale_frequencies": dict(finale_counts),
+        "digit_sum_frequencies": dict(digit_sum_counts),
         "total_spins": total_spins
     }
 
@@ -500,6 +585,11 @@ VOISINS_NUMBERS = {22,18,29,7,28,12,35,3,26,0,32,15,19,4,21,2,25}
 TIERS_NUMBERS = {33,16,24,5,10,23,8,30,11,36,13,27}
 # Orphelins: 17,34,6,1,20,14,31,9 (8 numbers)
 ORPHELINS_NUMBERS = {17,34,6,1,20,14,31,9}
+
+# Zero Spiel: 12, 35, 3, 26, 0, 32, 15 (7 numbers)
+# These numbers are part of Voisins du Zero.
+ZERO_SPIEL_NUMBERS = {12, 35, 3, 26, 0, 32, 15}
+
 
 # Sanity check: 17 + 12 + 8 = 37 numbers. All numbers covered.
 WHEEL_SECTIONS = {

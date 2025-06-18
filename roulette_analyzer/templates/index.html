@@ -10,6 +10,24 @@
 <div class="container">
     <h1>European Roulette Analyzer</h1>
 
+    <!-- Inside the main container, perhaps after the H1 title -->
+    <div class="visual-aids" style="text-align: center; margin-bottom: 20px;">
+        <h2>Visual Layouts</h2>
+        <div style="display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;">
+            <div class="visual-item" style="margin: 10px;">
+                <h4>European Roulette Wheel</h4>
+                <img src="{{ url_for('static', filename='images/roulette-wheel.png') }}" alt="Roulette Wheel" style="width: 200px; height: auto; border: 1px solid #ccc;">
+                <p style="font-size: 0.8em;"><em>(Static visual aid)</em></p>
+            </div>
+            <div class="visual-item" style="margin: 10px;">
+                <h4>Roulette Table Layout</h4>
+                <img src="{{ url_for('static', filename='images/roulette-table.png') }}" alt="Roulette Table" style="width: 300px; height: auto; border: 1px solid #ccc;">
+                <p style="font-size: 0.8em;"><em>(Static visual aid)</em></p>
+            </div>
+        </div>
+    </div>
+    <hr>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flashed-messages" style="margin-bottom: 15px;">
@@ -103,6 +121,59 @@
                 <h4>{{ cat_name }}:</h4>
                 <ul>{% for item, count in analysis.frequencies[key_name].items() %}<li><span style="text-transform:capitalize;">{{ item }}</span>: {{ count }}</li>{% else %}<li>No {{ cat_name.lower() }} data.</li>{% endfor %}</ul>
             {% endfor %}
+
+            <h4>Zero Spiel Frequency:</h4>
+            <p>Hits in Zero Spiel: {{ analysis.frequencies.zero_spiel_hits | default('N/A') }}</p>
+
+            <!-- Row Frequencies -->
+            <h4>Row Frequencies (1-12):</h4>
+            <ul>
+            {% for row, count in analysis.frequencies.row_frequencies.items() | sort %}
+                <li>Row {{ row }}: {{ count }}</li>
+            {% else %}
+                <li>No row frequency data.</li>
+            {% endfor %}
+            </ul>
+
+            <!-- Diagonal Frequencies (Specific Examples) -->
+            <h4>Diagonal Frequencies (Examples):</h4>
+            <ul>
+            {% for diag_name, count in analysis.frequencies.diagonal_frequencies.items() | sort %}
+                <li>{{ diag_name }}: {{ count }}</li>
+            {% else %}
+                <li>No specific diagonal frequency data.</li>
+            {% endfor %}
+            </ul>
+
+            <!-- Quadrant Frequencies (1-4) -->
+            <h4>Quadrant Frequencies:</h4>
+            <ul>
+            {% for quad, count in analysis.frequencies.quadrant_frequencies.items() | sort %}
+                <li>Quadrant {{ quad }}: {{ count }}</li>
+            {% else %}
+                <li>No quadrant frequency data.</li>
+            {% endfor %}
+            </ul>
+
+            <!-- Finale Frequencies -->
+            <h4>Finale Frequencies:</h4>
+            <ul>
+            {% for finale_name, count in analysis.frequencies.finale_frequencies.items() | sort %}
+                <li>{{ finale_name }}: {{ count }}</li>
+            {% else %}
+                <li>No finale frequency data.</li>
+            {% endfor %}
+            </ul>
+
+            <!-- Digit Sum Frequencies -->
+            <h4>Digit Sum Frequencies:</h4>
+            <ul>
+            {% for digit_sum, count in analysis.frequencies.digit_sum_frequencies.items() | sort %}
+                <li>Sum {{ digit_sum }}: {{ count }}</li>
+            {% else %}
+                <li>No digit sum frequency data.</li>
+            {% endfor %}
+            </ul>
         {% else %}
             <p>No frequency data available.</p>
         {% endif %}

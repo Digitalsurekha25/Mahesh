@@ -68,3 +68,35 @@ This will discover and run all test files located in the `tests` directory.
 ## Disclaimer
 
 This tool is for educational and analytical purposes only. Roulette is a game of chance, and this tool does not guarantee any winnings or predict outcomes with certainty. Gamble responsibly.
+
+## Deployment to Vercel & Data Persistence
+
+This application is designed to be deployable on Vercel. However, there are important considerations regarding data persistence, particularly for the Machine Learning (ML) features:
+
+*   **SQLite Database:** The application uses an SQLite database (`roulette_data.db`) located in the project's root directory. This database stores a persistent history of all roulette numbers submitted through the application. Its primary purpose is to accumulate data for training the ML prediction models (e.g., predicting the next dozen).
+
+*   **ML Model Training (`/train_ml_models` route):** The ML models are trained using the data stored in `roulette_data.db`. When you trigger training, the application reads from this database.
+
+*   **Vercel Serverless Environment:** When deployed to Vercel's serverless functions:
+    *   The filesystem is generally ephemeral or read-only, especially on free/hobby tiers.
+    *   Directly writing to or relying on a persistent SQLite file within the deployment bundle might not work as expected for continuous data accumulation. Data written to `roulette_data.db` during a function's execution may not persist across different invocations or after a redeployment.
+    *   While the application might initialize the database if it's missing, any new data added via the web interface to the SQLite DB on Vercel is unlikely to be saved permanently in the serverless environment.
+
+*   **Implications:**
+    *   **ML Model Training on Vercel:** The `/train_ml_models` route will likely not be effective for *on-the-fly retraining with newly submitted data* in a standard Vercel serverless deployment due to the SQLite persistence issue.
+    *   **Using Pre-trained Models:** The application is structured to save trained ML models as `.joblib` files in the `/models` directory. These files *can and should be bundled* with your Vercel deployment. The prediction engine will then load these pre-trained models, and predictions will work correctly.
+    *   **Local Development & Initial Training:** It is recommended to run the training process (`python -m src.train_models` or via the web UI's training button) in your local development environment where SQLite can persist data correctly. Once models are trained and saved in the `/models` directory, they can be committed and deployed with the application.
+    *   **Session Data:** The core roulette analysis features (frequencies, trends, patterns, etc.) that operate on numbers entered during the *current user session* (stored temporarily in the browser's session) will function correctly on Vercel.
+
+*   **For Persistent Server-Side Data on Vercel:** If you require the ability to continuously accumulate training data and retrain models directly on Vercel, you would need to integrate a Vercel-compatible persistent storage solution, such as:
+    *   Vercel KV
+    *   Vercel Postgres
+    *   An external cloud database service.
+    This would involve modifying `roulette_analyzer/src/database_manager.py` to use the chosen service instead of SQLite for production deployments.
+
+In summary, for Vercel deployment:
+1.  Train your ML models in your local environment.
+2.  Ensure the generated `.joblib` files in the `models/` directory are committed and deployed.
+3.  The prediction features will use these bundled models.
+4.  The core analysis of session data will work fine.
+5.  Avoid relying on the `/train_ml_models` route to update models with new live data on Vercel unless you reconfigure data persistence.
